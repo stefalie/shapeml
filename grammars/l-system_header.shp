@@ -1,0 +1,97 @@
+// Shape Modeling Language (ShapeML)
+// Copyright (C) 2019  Stefan Lienhard
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// The following variables and rules allow to define L-systems in ShapeML as
+// they are described in:
+// Prusinkiewicz, Aristid Lindenmayer, 1990, The Algorithmic Beauty of Plants.
+//
+//
+// H-axis (heading) corresponds to y-axis
+// L-axis (left)    corresponds to z-axis
+// U-axis (up)      corresponds to x-axis
+//
+// +(angle) corresponds to ^plus(angle)      (corresponds to rotateX(+angle))
+// -(angle) corresponds to ^minus(angle)     (corresponds to rotateX(-angle))
+// \(angle) corresponds to ^backslash(angle) (corresponds to rotateY(-angle))
+// /(angle) corresponds to ^slash(angle)     (corresponds to rotateY(+angle))
+// ^(angle) corresponds to ^caret(angle)     (corresponds to rotateZ(-angle))
+// &(angle) corresponds to ^ampersand(angle) (corresponds to rotateZ(+angle))
+//
+// F(length) corresponds to ^F(length)
+// !(width)  corresponds to ^exclamation(w)
+// $         corresponds to ^dollar (corresponds to rotateZAxisHorizontal)
+
+// wr = ...;  // Width decrease rate, must be defined in the L-system.
+
+param high_LOD            = true;   // Level of detail
+param high_LOD_balljoints = false;  // Adds ball joints at the end of branches.
+
+func plus(angle)      = { rotateX( angle) };
+func minus(angle)     = { rotateX(-angle) };
+func backslash(angle) = { rotateY(-angle) };
+func slash(angle)     = { rotateY( angle) };
+func caret(angle)     = { rotateZ(-angle) };
+func ampersand(angle) = { rotateZ( angle) };
+
+func F(length) = {
+  sizeY(length)
+  [
+    translate(-0.5 * size_x, 0, -0.5 * size_z)
+    ForwardMesh
+  ]
+  translateY(length)
+};
+
+func exclamation(w) = {
+  sizeX(w)
+  sizeZ(w)
+};
+
+const dollar = { rotateZAxisHorizontal };
+
+// Creates a branch with a skewed cylinder.
+rule ForwardMesh :: high_LOD = {
+  BallJoint
+  cylinder(32, 1, 1)
+  set("ffd_offset", (1.0 - wr) * size_x * 0.5)
+  ffdTranslate(0, 1, 0,  ffd_offset, 0,  ffd_offset)
+  ffdTranslate(0, 1, 1,  ffd_offset, 0, -ffd_offset)
+  ffdTranslate(1, 1, 0, -ffd_offset, 0,  ffd_offset)
+  ffdTranslate(1, 1, 1, -ffd_offset, 0, -ffd_offset)
+  ffdApply
+  F_
+};
+
+// Creates a branch with a simple box.
+rule ForwardMesh :: !high_LOD = {
+  cube
+  F_
+};
+
+rule BallJoint :: high_LOD_balljoints = {
+  translateY(size_y)
+  scaleCenterX(wr)
+  scaleCenterZ(wr)
+  sizeY(size_x)
+  translateY(-0.5 * size_y)
+  sphere(32, 16)
+  trimPlane(0.0, -1.0, 0.0, -0.5 * size_y)
+  trimLocal
+  F_BallJoint_
+};
+
+rule BallJoint :: !high_LOD_balljoints = {};
+

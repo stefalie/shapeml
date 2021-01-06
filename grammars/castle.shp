@@ -1,0 +1,568 @@
+// Shape Modeling Language (ShapeML)
+// Copyright (C) 2019  Stefan Lienhard
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+param height_scale = 0.6;
+
+const north_width = 12;
+const north_height = 20 * height_scale - 1.5;
+const north_depth = 16;
+
+const east_width = 5;
+const east_height = 14 * height_scale - 3;
+const east_depth = 20;
+const east_pos_x = north_width;
+const east_pos_z = 14;
+
+const west_width = 10;
+const west_height = 12 * height_scale;
+const west_depth = east_depth - north_depth + east_pos_z;
+const west_pos_x = -west_width;
+const west_pos_z = north_depth;
+
+const south_width = north_width;
+const south_height = 8 * height_scale;
+const south_depth = 5;
+const south_pos_x = 0;
+const south_pos_z = north_depth + west_depth - 1;
+
+const tower_NE_width = east_width;
+const tower_NE_height = 30 * height_scale - 2.5;
+const tower_NE_pos_x = north_width;
+const tower_NE_pos_z = east_pos_z - tower_NE_width;
+
+const tower_SE_width = south_depth - 0.2;
+const tower_SE_height = 14 * height_scale;
+const tower_SE_pos_x = north_width;
+const tower_SE_pos_z = south_pos_z + 1;
+
+const tower_SW_width = south_depth;
+const tower_SW_height = 16 * height_scale;
+const tower_SW_pos_x = -tower_SW_width;
+const tower_SW_pos_z = south_pos_z;
+
+const tower_NW_width = 4;
+const tower_NW_height = 24 * height_scale;
+const tower_NW_pos_x = -tower_NW_width;
+const tower_NW_pos_z = west_pos_z - tower_NW_width;
+
+const floor_height = 3.2;
+const ground_floor_height = 2.6;
+const window_tile_width = 2.8;
+const window_width = 0.65;
+const window_height = 1.4;
+const window_gap = 0.03;
+const gate_height = 3.6;
+const gate_width = 3.4;
+const door_width = 1.3;
+const door_height = 2.1;
+const slit_window_width = 0.2;
+const slit_window_height = 0.6;
+
+const ledge_height = 0.75;
+const ledge_decoration_width = 0.45;
+const ledge_decoration_height = 0.5;
+const ledge_decoration_depth = 0.3;
+const ledge_decoration_spacing = 0.7;
+
+const tower_num_segments = 12;
+const tower_roof_angle = 56.6;
+const tower_roof_overhang = 0.3;
+const tower_slit_window_height = 1.0;
+
+const building_roof_angle = 40.0;
+
+param roof_color = "#7A3B27";
+param brick_color = "#C9C4BE";
+param flag_color = "#426C15";
+const mortar_color = "#918e89";
+const door_color = "#381E10";
+
+const tex_size = 3.0;
+
+rule Axiom = {
+  CheckAssetAvailability
+  MassModel
+};
+
+const has_assets = (
+  file_exists("assets/castle_brick_arch_window.obj") &&
+  file_exists("assets/castle_brick_arch_door.obj") &&
+  file_exists("assets/castle_brick_arch_gate.obj")
+);
+
+rule CheckAssetAvailability :: has_assets = {};
+rule CheckAssetAvailability :: !has_assets = {
+  printLn("Before castle.shp can be derived with all details, some extra assets need to be generated. For now, red placeholder boxes will be used.")
+  printLn("Please run ShapeMaker 3 times with the following parameters:")
+  printLn("--no-gui --export-obj --export-dir PATH_TO_SHAPEML/grammars/assets/ --export-suffix _window PATH_TO_SHAPEML/grammars/castle_brick_arch.shp")
+  printLn("--no-gui --export-obj --export-dir PATH_TO_SHAPEML/grammars/assets/ --export-suffix _door --parameter arc_num_bricks=9 --parameter arc_radius=10.0 --parameter has_bottom=false PATH_TO_SHAPEML/grammars/castle_brick_arch.shp")
+  printLn("--no-gui --export-obj --export-dir PATH_TO_SHAPEML/grammars/assets/ --export-suffix _gate --parameter arc_num_bricks=15 --parameter arc_radius=20.0 --parameter brick_depth=20.0 --parameter has_bottom=false PATH_TO_SHAPEML/grammars/castle_brick_arch.shp")
+};
+
+rule MassModel = {
+  // Buildings
+  [
+    cube
+    set("gable", false)
+    set("gate", false)
+    set("door_side", "none")
+    set("gate_side", "none")
+
+    [  // North building
+      size(north_width, north_height, north_depth)
+      set("door_side", "front")
+      Building
+    ]
+    [  // East building
+      size(east_width, east_height, east_depth)
+      translate(east_pos_x, 0, east_pos_z)
+      set("gable", true)
+      Building
+    ]
+    [  // South building
+      size(south_width, south_height, south_depth)
+      translate(south_pos_x, 0, south_pos_z)
+      set("gable", true)
+      set("gate_side", "front_and_back")
+      Building
+    ]
+    [  // West building
+      size(west_width, west_height, west_depth)
+      translate(west_pos_x, 0, west_pos_z)
+      set("door_side", "right")
+      Building
+    ]
+  ]
+
+  // Towers
+  cylinder(tower_num_segments, 1, 1)
+  [  // NE
+    size(tower_NE_width, tower_NE_height, tower_NE_width)
+    translate(tower_NE_pos_x, 0, tower_NE_pos_z)
+    Tower
+  ]
+  [  // SE
+    size(tower_SE_width, tower_SE_height, tower_SE_width)
+    translate(tower_SE_pos_x, 0, tower_SE_pos_z)
+    Tower
+  ]
+  [  // SW
+    size(tower_SW_width, tower_SW_height, tower_SW_width)
+    translate(tower_SW_pos_x, 0, tower_SW_pos_z)
+    Tower
+  ]
+  [  // NW
+    size(tower_NW_width, tower_NW_height, tower_NW_width)
+    translate(tower_NW_pos_x, 0, tower_NW_pos_z)
+    Tower
+  ]
+};
+
+rule Building = {
+  octreeAdd
+  [
+    BuildingBottom
+  ]
+  [
+    translateY(size_y)
+    size(size_x + 2 * ledge_decoration_depth, 0, size_z + 2 * ledge_decoration_depth)
+    centerX
+    centerZ
+
+    quad
+    BuildingRoofType
+  ]
+};
+
+rule BuildingBottom = {
+  uvSetupProjectionXY(tex_size, tex_size)
+  splitFace(
+    "front", {
+      set("door", get("door_side") == "front")
+      set("gate", get("gate_side") == "front_and_back")
+      BrickFacade
+    },
+    "back", {
+      set("door", get("door_side") == "back")
+      set("gate", get("gate_side") == "front_and_back")
+      BrickFacade
+    },
+    "left", {
+      set("door", get("door_side") == "left")
+      set("gate", get("gate_side") == "left_and_right")
+      BrickFacade
+    },
+    "right", {
+      set("door", get("door_side") == "right")
+      set("gate", get("gate_side") == "left_and_right")
+      BrickFacade
+    }
+  )
+};
+
+rule BuildingRoofType :: !get("gable") = {
+  roofHip(building_roof_angle)
+  splitY("ss",
+    2.0, { RoofSolidMaterial },
+    3.0, { scaleY(1.3) RoofSolidMaterial }
+  )
+};
+rule BuildingRoofType :: get("gable") = {
+  roofGable(building_roof_angle)
+  RoofSolidMaterial
+};
+
+rule Tower = {
+  octreeAdd
+  [
+    TowerBottom
+  ]
+  [
+    translateY(size_y)
+    size(size_x + 2 * tower_roof_overhang, 0, size_z + 2 * tower_roof_overhang)
+    centerX
+    centerZ
+  
+    circle(32)
+    roofPyramid(tan(tower_roof_angle) * size_x * 0.5)
+    TowerRoof
+  ]
+};
+
+func tower_tex_width_rounded(segment_width) = (segment_width * tower_num_segments) / round((segment_width * tower_num_segments) / tex_size);
+
+rule TowerBottom = {
+  splitFace("vertical", {
+    uvSetupProjectionXY(tower_tex_width_rounded(size_x), tex_size, index * size_x, 0.0)
+    TowerFace
+  })
+};
+
+rule TowerRoof = {
+  splitY("ss",
+    2.0, { RoofSolidMaterial },
+    3.0, { scaleY(1.3) RoofSolidMaterial translateY(size_y) FlagPole }
+  )
+};
+
+rule BrickFacade = {
+  splitY("s(s)f",
+    ground_floor_height * (get("gate") * 1.8 + !get("gate") * 1.0), { GroundFloor },
+    floor_height, { Floor },
+    ledge_height, { Ledge }
+  )
+};
+
+rule GroundFloor :: !get("gate") && !get("door") = {
+  BrickWallMaterial
+};
+rule GroundFloor :: get("gate") = {
+  splitX("sfs",
+    1, { BrickWallMaterial },
+    gate_width, { GateTile },
+    1, { BrickWallMaterial }
+  )
+};
+rule GroundFloor :: get("door") = {
+  splitX("s(s)sss",
+    0.4 * window_tile_width, { BrickWallMaterial },
+    window_tile_width, { WindowTile },
+    window_tile_width, { DoorTile },
+    window_tile_width, { WindowTile },
+    0.4 * window_tile_width, { BrickWallMaterial }
+  )
+};
+
+rule Floor = {
+  splitX("s(s)s",
+    0.4 * window_tile_width, { BrickWallMaterial },
+    window_tile_width, { WindowTile },
+    0.4 * window_tile_width, { BrickWallMaterial }
+  )
+};
+
+rule Ledge = {
+  splitX("s(fs)fs",
+    ledge_decoration_spacing, { BrickWallMaterial },
+    ledge_decoration_width, { LedgeDecoration },
+    ledge_decoration_spacing, { SlitWindowTile(slit_window_width, slit_window_height) },
+    ledge_decoration_width, { LedgeDecoration },
+    ledge_decoration_spacing, { BrickWallMaterial }
+  )
+};
+
+rule TowerFace :: index % 2 == 0 = {
+  splitY("s(s)f",
+    ground_floor_height, { BrickWallMaterial },
+    floor_height, { SlitWindowTile(slit_window_width, tower_slit_window_height) },
+    ledge_height, { TowerLedge }
+  )
+};
+rule TowerFace :: index % 2 != 0 = {
+  splitY("sf",
+    1, { BrickWallMaterial },
+    ledge_height, { TowerLedge }
+  )
+};
+
+rule TowerLedge = {
+  splitX("sssss",
+    ledge_decoration_width, { BrickWallMaterial },
+    ledge_decoration_width, { LedgeDecoration },
+    5 * ledge_decoration_width, { SlitWindowTile(slit_window_width, slit_window_height) },
+    ledge_decoration_width, { LedgeDecoration },
+    ledge_decoration_width, { BrickWallMaterial }
+  )
+};
+
+// Materials
+
+rule BrickWallMaterial = {
+  color(brick_color)
+  texture("assets/castle_brick_wall.jpg")
+  uvProject
+  BrickWallMaterial_
+};
+
+rule MortarMaterial = {
+  color(mortar_color)
+  MortarMaterial_
+};
+
+rule RoofSolidMaterial = {
+  texture("assets/castle_roof_tiles.jpg")
+  color(roof_color)
+  splitFace("all", {
+    // This is technically not fully correct, but it's hard to notice.
+    uvSetupProjectionXY(tex_size, tex_size)
+    uvProject
+    RoofMaterial_
+  })
+};
+
+// Ornaments and details
+
+rule LedgeDecoration = {
+  splitY("sf",
+    1, { BrickWallMaterial },
+    ledge_decoration_height, {
+      // The following could probably be done more elgantly with some rotateScopeX.
+      rotateY(-90)
+      rotateX(90)
+      size(ledge_decoration_depth * 0.6, size_x, size_y)
+      polygon(
+        0.000, 0.212,
+        0.000, 0.000,
+        0.051, 0.016,
+        0.119, 0.113,
+        0.228, 0.154,
+        0.259, 0.184,
+        0.262, 0.212
+      )
+      extrude(size_y)
+      translate(0, -size_y, -size_z)
+      LedgeDecoration_
+    }
+  )
+};
+
+rule SlitWindowTile(width, height) = {
+  splitX("sfs",
+    1, { BrickWallMaterial },
+    width, {
+      splitY("sfs",
+        1, { BrickWallMaterial },
+        height, { Slit }, 
+        1, { BrickWallMaterial }
+      )
+    },
+    1, { BrickWallMaterial }
+  )
+};
+
+rule Slit = {
+  extrude(0.5)
+  translateZ(-0.5)
+  normalsFlip
+  splitFace(
+    "back", {},
+    "all", { MortarMaterial }
+  )
+};
+
+rule WindowTile :: occlusion != "none" = {
+  BrickWallMaterial 
+};
+rule WindowTile :: occlusion == "none" = {
+  splitY("sfs",
+    1, { BrickWallMaterial },
+    window_height, {
+      splitX("sfs",
+        1, { BrickWallMaterial },
+        2 * window_width + window_gap, { DoubleWindow },
+        1, { BrickWallMaterial }
+      )
+    },
+    1, { BrickWallMaterial }
+  )
+};
+
+rule DoubleWindow = {
+  splitX("sss",
+    window_width, { Window },
+    window_gap, { BrickWallMaterial },
+    window_width, { Window }
+  )
+  Slit
+};
+
+rule Window :: !has_assets = {
+  color(1, 0, 0)
+  Window_
+};
+rule Window :: has_assets = {
+  WindowWall 
+  mesh("assets/castle_brick_arch_window.obj")
+  translateZ(-0.6 * size_z)
+  MortarMaterial
+};
+
+rule WindowWall = {
+  // Currently there is no support for polygons with holes. Instead,
+  // half the arch is modelled as polygon and then mirrored.
+  scaleX(0.5)
+  rotateScopeX(90)
+  polygon(
+     0.0,   0.0,
+    15.25,  0.0,
+    15.25,  1.8,
+     4.35,  1.8,
+     4.35, 24.0,
+     6.6,  30.4,
+    12.4,  34.3,
+    15.25, 34.3,
+    15.25, 36.0,
+     0.0,  36.0
+  )
+  rotateScopeX(-90)
+  BrickWallMaterial
+
+  translateX(size_x)
+  mirrorX
+  BrickWallMaterial
+};
+
+rule DoorTile = {
+  splitX("sfs",
+    1, { BrickWallMaterial },
+    door_width, {
+      splitY("fs",
+        door_height, { Door },
+        1, { BrickWallMaterial }
+      )
+    },
+    1, { BrickWallMaterial }
+  )
+};
+
+rule Door :: !has_assets = {
+  color(1, 0, 0)
+  Door_
+};
+rule Door :: has_assets = {
+  DoorOrGateWall 
+  translateZ(-0.45)
+  [  // Brick arch
+    mesh("assets/castle_brick_arch_door.obj")
+    sizeZ(0.6)
+    MortarMaterial
+  ]
+  DoorOrGatePlane 
+};
+
+rule GateTile = { 
+  splitY("fs",
+    gate_height, { Gate },
+    1, { BrickWallMaterial }
+  )
+};
+
+rule Gate :: !has_assets = {
+  color(1, 0, 0)
+  Gate_
+};
+rule Gate :: has_assets = {
+  DoorOrGateWall 
+  translateZ(-1.0)
+  [  // Brick arch
+    mesh("assets/castle_brick_arch_gate.obj")
+    sizeZ(1.2)
+    MortarMaterial
+  ]
+  DoorOrGatePlane 
+};
+
+rule DoorOrGateWall = {
+  rotateScopeX(90)
+  polygon(
+     0.0,  0.0,
+     5.2,  0.0,
+     5.2, 42.0,
+    13.0, 55.0,
+    29.0, 60.0,
+    45.0, 55.0,
+    52.8, 42.0,
+    52.8,  0.0,
+    58.0,  0.0,
+    58.0, 65.0,
+     0.0, 65.0
+  )
+  rotateScopeX(-90)
+  BrickWallMaterial
+};
+
+rule DoorOrGatePlane = {
+  translateZ(0.1)
+  color(door_color)
+  uvSetupProjectionXY(1.5, size_y, -size_x * 0.5, 0)
+  uvProject
+  texture("assets/castle_door.jpg")
+  GateDoor_
+};
+
+rule FlagPole = {
+  size(0.06, 2, 0.06)
+  centerX
+  centerZ
+  translateY(-0.1)
+  cylinder(5, 1, 1)
+  color("#c0c0c0")
+  Pole_
+  translateY(0.63 * size_y)
+  Flag
+};
+
+rule Flag = {
+  size(0.8 * size_y, 0.35 * size_y, 0)
+  centerZ
+  rotateScopeX(90)
+  polygon(0.0, 0.0, 1.0, 0.5, 0.0, 1.0)
+  rotateScopeX(-90)
+  extrude(0.001)
+  color(flag_color)
+  Flag_
+};
+

@@ -1,0 +1,75 @@
+// Shape Modeling Language (ShapeML)
+// Copyright (C) 2019  Stefan Lienhard
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+const grid_size = 128;
+
+rule Axiom = {
+  size(1, 0, 1)
+
+  NoiseGrid({ Perlin })
+
+  translateX(grid_size + 32)
+
+  NoiseGrid({ PerlinExtrude })
+
+  translateX(grid_size + 32)
+
+  NoiseGrid({ fBm })
+
+  translateX(grid_size + 32)
+
+  NoiseGrid({ fBmExtrude })
+};
+
+rule NoiseGrid(noise_rule) = {
+  repeat(grid_size, {
+    translateX(index)
+    repeat(grid_size, {
+      translateZ(index)
+      ^noise_rule
+    })
+  })
+};
+
+rule Perlin = {
+  ColorCell(noise(pos_world_x, pos_world_z) * 0.5 + 0.5)
+};
+
+rule PerlinExtrude = {
+  ExtrudeCell(noise(pos_world_x, pos_world_z) * 0.5 + 0.5)
+};
+
+rule fBm = {
+  ColorCell(fBm(pos_world_x, pos_world_z, 6) * 0.5 + 0.5)
+};
+
+rule fBmExtrude = {
+  ExtrudeCell(fBm(pos_world_x, pos_world_z, 6) * 0.8 + 0.9)
+};
+
+rule ColorCell(gray) = {
+  set("gray", clamp(0.0, 1.0, int(256.0 * gray) / 255.0))  // Quantize and clamp.
+  color(get("gray"), get("gray"), get("gray"))
+  quad
+  NoiseCellTerminal_
+};
+
+rule ExtrudeCell(height) = {
+  sizeY(15.0 * height + 0.0001)
+  cube
+  ExtrudeCellTerminal_
+};
+

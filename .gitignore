@@ -1,0 +1,15 @@
+# Temporary files
+*.orig
+*~
+*.swp
+
+# Build and project folders and files
+build/
+build-debug/
+build-release/
+CMakeLists.txt.user
+
+# Libraries
+*.so
+*.a
+

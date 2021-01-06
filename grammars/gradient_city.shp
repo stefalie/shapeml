@@ -1,0 +1,112 @@
+// Shape Modeling Language (ShapeML)
+// Copyright (C) 2020  Stefan Lienhard
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+param use_lots = true;
+
+rule Axiom = {
+  GradientCity
+};
+
+// Scale down to 5% to better match rendering settings.
+const lots_obj_width = 6264.292  * 0.05;
+const lots_obj_depth = 6476.4521 * 0.05;
+
+rule GradientCity :: use_lots = {
+  size(lots_obj_width, 0.0, lots_obj_depth)
+  centerX
+  centerZ
+
+  mesh("assets/gradient_city_lots.obj")
+  splitFace("all", { BuildingMass })
+};
+
+rule GradientCity :: !use_lots = {
+  size(lots_obj_width, 0.0, lots_obj_depth)
+
+  repeat(10000, {
+    translateX(rand_uniform(-spread_x, spread_x))
+    translateZ(rand_uniform(-spread_z, spread_z))
+    sizeX(rand_uniform(1, 4))
+    sizeZ(rand_uniform(1, 4))
+    quad
+    BuildingMass
+  })
+};
+
+const spread_x = 0.5 * lots_obj_width;
+const spread_z = 0.5 * lots_obj_depth;
+const spread_max_rad = sqrt(spread_x * spread_x + spread_z * spread_z) * 0.8;
+
+// Gray level of the building corresponds approximately to the normalized
+// distance from center of city.
+func gray_level(x, z) = 1.0 - sqrt(x * x + z * z) / spread_max_rad;
+// Quantize and clamp. If we don't do this, we end up with more materials than
+// the renderer can handle.
+func quantize(value) = clamp(0.0, 1.0, int(128.0 * value) / 127.0);
+
+// Building are colored according to their height.
+// The palette is inspired by:
+// https://www.iquilezles.org/www/articles/palettes/palettes.htm
+// It's very unfortuante that we don't have vector types in ShapeML.
+const palette_a_r = 0.5;
+const palette_a_g = 0.5;
+const palette_a_b = 0.5;
+const palette_b_r = 0.5;
+const palette_b_g = 0.5;
+const palette_b_b = 0.5;
+const palette_c_r = 0.7;
+const palette_c_g = 0.7;
+const palette_c_b = 0.2;
+const palette_d_r = 0.6;
+const palette_d_g = 0.7;
+const palette_d_b = 0.1;
+func palette_r(t) = palette_a_r + palette_b_r * cos(360.0 * (palette_c_r * t + palette_d_r));
+func palette_g(t) = palette_a_g + palette_b_g * cos(360.0 * (palette_c_g * t + palette_d_g));
+func palette_b(t) = palette_a_b + palette_b_b * cos(360.0 * (palette_c_b * t + palette_d_b));
+
+// Not sure if building heights in real cities also follow a multivariate
+// Gaussian distribution. Whatever.
+const mean_x1 = -70.0;
+const mean_z1 =  70.0;
+const mean_x2 =  70.0;
+const mean_z2 = -20.0;
+const mean_x3 = -40.0;
+const mean_z3 = -65.0;
+const sigma   =  30.0;
+
+func gaussian(t, mean, sigma) = exp(-0.5 * (t - mean) * (t - mean) / (sigma * sigma));
+func multi_gaussian(x, z) =
+    0.5 * gaussian(x, mean_x1, sigma) * gaussian(z, mean_z1, sigma) +
+    0.9 * gaussian(x, mean_x2, sigma) * gaussian(z, mean_z2, sigma) +
+    1.0 * gaussian(x, mean_x3, sigma) * gaussian(z, mean_z3, sigma);
+
+const bldg_height_peak = 35;
+const bldg_height_variation = 4;
+
+rule BuildingMass = {
+  set("bldg_avg_height", bldg_height_peak * multi_gaussian(pos_world_x, pos_world_z))
+  set("bldg_height", max(1, rand_uniform(bldg_avg_height - bldg_height_variation, bldg_avg_height + bldg_height_variation)))
+  extrude(bldg_height)
+
+  set("gray", gray_level(pos_world_x, pos_world_z))
+  set("bldg_height_normalized", bldg_height / (bldg_height_peak + bldg_height_variation))
+  color(
+      quantize(gray * palette_r(bldg_height_normalized)),
+      quantize(gray * palette_g(bldg_height_normalized)),
+      quantize(gray * palette_b(bldg_height_normalized))
+  )
+  BuildingMass_
+};

@@ -1,0 +1,66 @@
+// Shape Modeling Language (ShapeML)
+// Copyright (C) 2019  Stefan Lienhard
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// This is best viewed with a black background.
+
+const n = 7;
+const size = 5.0;
+const distance = size * 1.3;
+
+param default_metallic = 0.0;
+param vary_metallic_along_x = false;
+param vary_metallic_along_y = true;
+
+param default_roughness = 0.0;
+param vary_roughness_along_x = true;
+param vary_roughness_along_y = false;
+
+param default_reflectance = 0.5;
+param vary_reflectance_along_x = false;
+param vary_reflectance_along_y = false;
+
+param albedo = "#800000";
+
+rule Axiom = {
+  size(size, size, size)
+  sphere(32, 32)
+  color(albedo)
+
+  repeat(n, {
+    translate(index * distance, 0, 0)
+    set("x_gradient", float(index) / n)
+
+    repeat(n, {
+      translate(0, index * distance, 0)
+      set("y_gradient", float(index) / n)
+
+      metallic(x_gradient * y_gradient * (vary_metallic_along_x && vary_metallic_along_y) +
+               x_gradient * (vary_metallic_along_x && !vary_metallic_along_y) +
+               y_gradient * (!vary_metallic_along_x && vary_metallic_along_y) +
+               default_metallic * (!vary_metallic_along_x && !vary_metallic_along_y))
+      roughness(x_gradient * y_gradient * (vary_roughness_along_x && vary_roughness_along_y) +
+                x_gradient * (vary_roughness_along_x && !vary_roughness_along_y) +
+                y_gradient * (!vary_roughness_along_x && vary_roughness_along_y) +
+                default_roughness * (!vary_roughness_along_x && !vary_roughness_along_y))
+      reflectance(x_gradient * y_gradient * (vary_reflectance_along_x && vary_reflectance_along_y) +
+                  x_gradient * (vary_reflectance_along_x && !vary_reflectance_along_y) +
+                  y_gradient * (!vary_reflectance_along_x && vary_reflectance_along_y) +
+                  default_reflectance * (!vary_reflectance_along_x && !vary_reflectance_along_y))
+
+      PBRShape_
+    })
+  })
+};

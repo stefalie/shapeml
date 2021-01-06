@@ -1,0 +1,13 @@
+// Color palette for ShapeML test scenes.
+//
+// These colors come straight from:
+// ttps://github.com/morhetz/gruvbox
+
+const color_0 = "#BDAE93";  // Dark gray
+const color_1 = "#EBDBB2";  // Light gray
+const color_2 = "#83A598";  // Blue
+const color_3 = "#B8BB26";  // Green
+const color_4 = "#FABD2F";  // Yellow
+const color_5 = "#FE8019";  // Orange
+const color_6 = "#FB4934";  // Red
+

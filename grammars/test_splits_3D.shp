@@ -1,0 +1,113 @@
+// Shape Modeling Language (ShapeML)
+// Copyright (C) 2019  Stefan Lienhard
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+#include "test_color_palette.shp"
+
+rule Side1 = { translateZ(0.5) color(color_1) End };
+rule Side2 = { translateZ(0.5) color(color_2) End };
+rule Side3 = { translateZ(0.5) color(color_3) End };
+rule Side4 = { translateZ(0.5) color(color_4) End };
+rule Side5 = { translateZ(0.5) color(color_5) End };
+rule Side6 = { translateZ(0.5) color(color_6) End };
+rule End   = { extrude(0.1) End_ };
+
+rule Axiom = {
+  size(12, 0, 12)
+
+  [
+    size(5, 5, 5)
+    centerX
+    centerZ
+
+    sphere(40, 20)
+    splitFace(
+      "left",   { Side1 },
+      "right",  { Side2 },
+      "front",  { Side3 },
+      "back",   { Side4 },
+      "top",    { Side5 },
+      "bottom", { Side6 }
+    )
+  ]
+
+  translateX(12)
+
+  [
+    size(6, 6, 6)
+    centerX
+    centerZ
+
+    polygon(0, 0, 5, 0, 7.5, 2.5, 10, 0, 10, 5, 8, 5, 10, 8, 10, 10, 5, 5, 2, 10)
+    extrude(2)
+    color(color_2)
+    Mesh_
+
+    color(color_1)
+    splitFaceByIndex(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, { translateZ(0.5) End })
+  ]
+
+  translateX(-12)
+  translateZ(-12)
+
+  [
+    // Fancy some sliced bunny?
+    size(8, 8, 8)
+    centerX
+    centerZ
+
+    mesh("assets/bunny.obj")
+    rotateScopeZ(-15)
+    rotateScopeY(-10)
+    splitX(
+      "(ss)s",
+      0.4, { BunnySliceDiag },
+      0.2, { BunnySliceDiag },
+      0.4, { BunnySliceDiag }
+    )
+  ]
+
+  translateX(12)
+
+  [
+    // Or what about a diced bunny?
+    size(8, 8, 8)
+    centerX
+    centerZ
+
+    mesh("assets/bunny.obj")
+    splitX("(fs)f", 0.2, { BunnySliceX }, 0.1, { }, 0.2, { BunnySliceX }) 
+  ]
+};
+
+rule BunnySliceDiag :: index % 2 == 0 && (index / 2) % 2 == 0 = { color(color_2) BunnySlice_ };
+rule BunnySliceDiag :: index % 2 == 0 && (index / 2) % 2 == 1 = { color(color_5) BunnySlice_ };
+rule BunnySliceDiag :: index % 2 == 1 = {};
+
+rule BunnySliceX = {
+  set("x_idx", index / 2)
+  splitY("(fs)f", 0.2, { BunnyColY }, 0.1, { }, 0.2, { BunnyColY }) 
+};
+rule BunnyColY = {
+  set("y_idx", index / 2)
+  splitZ("(fs)f", 0.2, { BunnyDiceZ }, 0.1, { }, 0.2, { BunnyDiceZ })
+};
+rule BunnyDiceZ = {
+  set("z_idx", index / 2)
+  splitZ("(fs)f", 0.2, { BunnyDice }, 0.1, { }, 0.2, { BunnyDice })
+};
+rule BunnyDice :: (get("x_idx") + get("y_idx") + get("z_idx")) % 2 == 0 = { color(color_3) BunnyDice_ };
+rule BunnyDice :: (get("x_idx") + get("y_idx") + get("z_idx")) % 2 == 1 = { color(color_6) BunnyDice_ };
+  

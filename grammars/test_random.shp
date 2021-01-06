@@ -1,0 +1,87 @@
+// Shape Modeling Language (ShapeML)
+// Copyright (C) 2019  Stefan Lienhard
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+#include "test_color_palette.shp"
+
+param mean_1D = 0.0;
+param sigma_1D = 5.0;
+
+param mean_2D_x = 0.0;
+param mean_2D_y = 0.0;
+param sigma_2D_x = 5.0;
+param sigma_2D_y = 5.0;
+
+func pdf_gaussian_1D(x, mean, sigma) = 1.0 / (sigma * sqrt(2.0 * pi)) * exp(-0.5 * (x - mean) * (x - mean) / (sigma * sigma));
+
+rule Axiom = {
+  BackgroundPlane
+  RandomPlot1
+  translateX(50.0)
+  RandomPlot2
+
+  translateX(60.0)
+  RandomColorCube
+};
+
+rule RandomPlot1 = {
+  repeat(200, { GaussianBar })
+};
+
+rule GaussianBar = {
+  translateX(rand_uniform(-20.0, 20.0))
+  size(0.4, 100.0 * pdf_gaussian_1D(pos_x, mean_1D, sigma_1D), 0.4)
+  translateX(-0.5 * size_x)
+  color(color_2)
+  cylinder(16, 1, 1)
+  GaussianBar_
+};
+
+rule RandomPlot2 = {
+  repeat(1000, { GaussianDisk })
+};
+
+rule GaussianDisk = {
+  translateX(rand_normal(mean_2D_x, sigma_2D_x))
+  translateY(rand_normal(mean_2D_y, sigma_2D_y))
+  size(0.4, 0.4, 0.4)
+  translate(-0.5 * size_x, -0.5 * size_y, -0.5 * size_z)
+  color(color_2)
+  sphere(8, 4)
+  GaussianSphere_
+};
+
+rule BackgroundPlane = {
+  size(90.0, 0.0, 40.0)
+  rotateX(90)
+  translate(-20.0, -0.3, -20.0)
+  quad
+  color(color_1)
+  BackgroundPlane_
+};
+
+rule RandomColorCube = {
+  size(30.0, 30.0, 30.0)
+  centerAtOrigin
+  cube
+  splitFace("all", {
+    splitRepeatX(2.0, { splitRepeatY(2.0, { CubeTile }) })
+  })
+};
+
+rule CubeTile : 10.0 = { color(color_1) TileGray_   };
+rule CubeTile :  3.0 = { color(color_2) TileBlue_   };
+rule CubeTile :  1.0 = { color(color_5) TileOrange_ };
+

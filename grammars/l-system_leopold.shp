@@ -1,0 +1,79 @@
+// An L-system inspired by Listing 5.5 in:
+// Leopold, 2017, Algorithmische Botanik durch Lindenmayer Systeme in Blender.
+
+#include "l-system_header.shp"
+
+param max_age = 3;
+param dw = 0.7;
+param branch_length = 9.0;
+param num_iterations = 10;
+
+rule Axiom = {
+  color("#FFC588")
+  materialName("wood")
+
+  ^exclamation(0.5 + num_iterations * dw)
+  set("wr", 1.0)
+  ^F(2.0 * branch_length)
+  A(0, num_iterations)
+};
+
+rule A(age, n) :: age == max_age || n == 0 = {};
+rule A(age, n) :: age < max_age && n > 0 = {
+  ^I(n)
+  ^slash(137.5)
+  Leaves(age, n)
+  [
+    ^plus(40.0)
+    A(0, n - 1)
+  ]
+  A(age + 1, n - 1)
+};
+
+func I(age) = {
+  ^exclamation(size_x * wr)
+  set("wr", (0.5 + (age - 1) * dw) / size_x)
+  ^F(branch_length)
+};
+
+rule Leaves(age, n) :: n > 3 = {};
+rule Leaves(age, n) :: n <= 3 && !(n == 1 && age > 0) = {
+  ^caret(45.0)
+  Leaf(10.0 + n)
+};
+rule Leaves(age, n) :: n == 1 && age > 0 = {
+  [
+    ^caret(45.0)
+    Leaf(10.0 + n)
+  ]
+  [
+    ^caret(-15.0)
+    ^slash(137.5)
+    Leaf(10.0 + n)
+  ]
+};
+
+rule Leaf(size) = {
+  color("#81E751")
+  materialName("leaf")
+
+  rotateY(90)
+  size(0.5 * size, 0.0, size)
+  polygon(  0.00,  0.00,
+            4.52,  0.33,
+            7.56,  1.30,
+           10.00,  3.22,
+            9.36,  5.61,
+            6.47,  7.72,
+            0.50, 10.00,
+           -6.47,  7.72,
+           -9.36,  5.61,
+          -10.00,  3.22,
+           -7.56,  1.30,
+           -4.52,  0.33)
+  extrude(0.05)
+  rotateX(90)
+  translate(-0.5 * size_x, -0.025, -size_z)
+  Leaf_
+};
+

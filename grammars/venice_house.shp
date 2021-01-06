@@ -1,0 +1,804 @@
+// Shape Modeling Language (ShapeML)
+// Copyright (C) 2019  Stefan Lienhard
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+const building_width = rand_uniform(9, 13.6);
+const building_height = rand_uniform(6.3, 11.5);
+const building_depth = rand_uniform(6, 15.5);
+
+const floor_height = rand_uniform(3.2, 4.2);
+
+rule Axiom = {
+  size(building_width, building_height, building_depth)
+  cube
+  set("top_block_chance", 0.25)
+  BuildingBottom
+};
+
+rule BuildingBottom : 0.5 = {
+  BuildingBottomSplit
+};
+rule BuildingBottom : 0.5 = {
+  BuildingBottomSplit
+  SideChimneySideSelect
+};
+
+rule BuildingBottomSplit : 0.6 = {
+  splitY("(s)f",
+    floor_height, { FloorBlock },
+    ledge_height, { Ledge(true) }
+  )
+};
+
+rule BuildingBottomSplit : 0.4 = {
+  splitY("(sf)sf",
+    floor_height, { FloorBlock },
+    ledge_height, { Ledge(false) },
+    floor_height, { FloorBlock },
+    ledge_height, { Ledge(true) }
+  )
+};
+
+const side_chimney_width = 0.5;
+const side_chimney_offset = 0.3;
+const side_chimney_side_idx = rand_int(0, 3);
+const side_chimney_overlap = 0.4 * side_chimney_width;
+const side_chimney_top_offset = side_chimney_width + 0.3;
+
+rule SideChimneySideSelect = {
+  splitFace("vertical", {
+    set("has_side_chimney", index == side_chimney_side_idx)
+    SideChimney
+  })
+};
+
+rule SideChimney :: !get("has_side_chimney") = {};
+rule SideChimney :: get("has_side_chimney") = {
+  translate(side_chimney_offset * size_x, 0, -side_chimney_overlap)
+  sizeX(side_chimney_width)
+  sizeY(size_y + ledge_height)
+  extrude(side_chimney_width)
+  octreeAdd
+  SideChimneyBottom_
+
+  translateY(size_y)
+  [
+    rotateX(-90)
+    sizeY(side_chimney_top_offset)
+    translate(0, -side_chimney_width, 0)
+    octreeAdd
+    SideChimneyTopHorizontal_
+  ]
+  translateZ(-side_chimney_top_offset)
+  sizeY(4)
+  octreeAdd
+  splitY("sf",
+    1, { SideChimneyTop_ },
+    0.7, {
+      scale(1.2, 1, 1.2)
+      centerX
+      centerZ
+      SideChimneyTopTop_
+    }
+  )
+};
+
+rule FloorBlock = {
+  set("level", index)
+  splitFace("vertical", { Floor(level) })
+};
+
+const facade_type = rand_int(0, 3);
+rule Floor(level) :: facade_type == 0 = { Floor0(level) };
+rule Floor(level) :: facade_type == 1 = { Floor1(level) };
+rule Floor(level) :: facade_type == 2 = { Floor2(level) };
+rule Floor(level) :: facade_type == 3 = { Floor3(level) };
+
+const win_width = rand_uniform(1.0, 1.7);
+const win_gap = rand_uniform(0.8, 1.3);
+
+rule Floor0(level) :: level == 0 = {
+  splitX("ss(ss)s",
+    win_gap * 0.5, { Wall_ },
+    win_width, { DoorTile },
+    win_gap, { Wall_ },
+    win_width, { WindowTile(0) },
+    win_gap * 0.5, { Wall_ }
+  )
+};
+rule Floor0(level) :: level > 0 = {
+  splitX("ss(ss)s",
+    win_gap * 0.5, { Wall_ },
+    win_width, { WindowTile(0) },
+    win_gap, { Wall_ },
+    win_width, { WindowTile(0) },
+    win_gap * 0.5, { Wall_ }
+  )
+};
+
+const win_gap_middle = 0.9;
+rule Floor1(level) :: level == 0 = {
+  splitX("s(ss)sssss(ss)s",
+    win_gap * 0.7, { Wall_ },
+    win_width, { WindowTile(0) },
+    win_gap, { Wall_ },
+    win_width, { WindowTile(0) },
+    win_gap, { Wall_ },
+    win_width, { DoorTile },
+    win_gap, { Wall_ },
+    win_width, { WindowTile(0) },
+    win_gap, { Wall_ },
+    win_width, { WindowTile(0) },
+    win_gap * 0.7, { Wall_ }
+  )
+};
+rule Floor1(level) :: level > 0 = {
+  splitX("s(ss)sssss(ss)s",
+    win_gap * 0.7, { Wall_ },
+    win_width, { WindowTile(0) },
+    win_gap, { Wall_ },
+    win_width, { WindowTile(0) },
+    win_gap, { Wall_ },
+    win_width, { WindowTile(0) },
+    win_gap, { Wall_ },
+    win_width, { WindowTile(0) },
+    win_gap, { Wall_ },
+    win_width, { WindowTile(0) },
+    win_gap * 0.7, { Wall_ }
+  )
+};
+
+rule Floor2(level) :: level == 0 = {
+  splitX("sfs(f)sfs",
+    win_gap * 1.3, { Wall_ },
+    win_width, { WindowTile(0) },
+    win_gap * 1.3, { Wall_ },
+    win_width * 1.1, { WindowTile(0) },
+    win_gap * 1.3, { Wall_ },
+    win_width, { DoorTile },
+    win_gap * 1.3, { Wall_ }
+  )
+};
+rule Floor2(level) :: level > 0 = {
+  splitX("sfs(f)sfs",
+    win_gap * 1.3, { Wall_ },
+    win_width, { WindowTile(0) },
+    win_gap * 1.3, { Wall_ },
+    win_width * 1.1, { WindowTile(1) },
+    win_gap * 1.3, { Wall_ },
+    win_width, { WindowTile(0) },
+    win_gap * 1.3, { Wall_ }
+  )
+};
+
+rule Floor3(level) :: level == 0 = {
+  splitX("s(fs)fsfsf(sf)s",
+    win_gap * 0.5, { Wall_ },
+    win_width, { WindowTile(0) },
+    win_gap, { Wall_ },
+    win_width, { WindowTile(0) },
+    win_gap * 0.75, { Wall_ },
+    win_width, { DoorTile },
+    win_gap * 0.75, { Wall_ },
+    win_width, { WindowTile(0) },
+    win_gap, { Wall_ },
+    win_width, { WindowTile(0) },
+    win_gap * 0.5, { Wall_ }
+  )
+};
+rule Floor3(level) :: level > 0 = {
+  splitX("ss(ss)s",
+    win_gap * 0.5, { Wall_ },
+    win_width, { WindowTile((level == 1) * 1.3) },
+    win_gap, { Wall_ },
+    win_width, { WindowTile((level == 1) * 1.3) },
+    win_gap * 0.5, { Wall_ }
+  )
+};
+
+const win_height = rand_uniform(1.9, 2.5);
+const win_gap_top = rand_uniform(0.5, 1.1);
+const win_gap_bottom = rand_uniform(0.5, 0.8);
+const door_height = 2.5;
+const door_gap_top = 1.0;
+
+rule WindowTile(balcony_width) = {
+  splitY("sss",
+    win_gap_bottom, { Wall_ },
+    win_height, { Window },
+    win_gap_top, { Wall_ }
+  )
+  Balcony(balcony_width)
+};
+
+const plate_height = 0.07;
+const railing_width = 0.16;
+const railing_height = 0.07;
+const balcony_depth = 0.75;
+const balcony_height = 0.9;
+const pillar_width = 0.12;
+const pillar_margin = 0.1;
+const balcony_offset = (railing_width - pillar_width) * 0.5;
+
+rule Balcony(width) :: width == 0.0 = {};
+rule Balcony(width) :: width > 0.0 = {
+  translateY(win_gap_bottom * 0.4)
+  size(size_x * width + railing_width, balcony_height, 0)
+  centerX
+  extrude(balcony_depth)
+
+  splitY("fsf",
+    plate_height, { BalconyPlate_ },
+    1, {
+      size(size_x - 2 * balcony_offset, size_y, size_z - balcony_offset)
+      centerX
+      splitX("fsf",
+        pillar_width, { PillarsSide },
+        1, { splitZ("sf", 1, {}, pillar_width, { Pillars }) },
+        pillar_width, { PillarsSide }
+      )
+    },
+    railing_height, {
+      splitX("fsf",
+        railing_width, { Railing_ },
+        1, { splitZ("sf", 1, {}, railing_width, { Railing_ }) },
+        railing_width, { Railing_ }
+      )
+    }
+  )
+};
+
+rule PillarsSide = {
+  splitZ("sf",
+    1, { rotateScopeY(-90) Pillars },
+    pillar_width, { BalconyCorner_ }
+  )
+};
+rule Pillars = {
+  splitX("s(fs)",
+    pillar_margin, {},
+    pillar_width, {
+      mesh("assets/venice_balcony_pillar.obj")
+      Pillar_
+    },
+    pillar_margin, {}
+  )
+};
+
+rule DoorTile = {
+  splitY("ss",
+    door_height, { Door },
+    door_gap_top, { Wall_ }
+  )
+};
+rule DoorTile = {
+  splitY("ss",
+    win_gap_bottom + win_height, { Door },
+    win_gap_top, { Wall_ }
+  )
+};
+
+const ledge_height = rand_uniform(0.18, 0.29);
+const ledge_type_rand = rand_int(0, 4);
+const ledge_type = (
+    1 * (ledge_type_rand == 0) +
+    2 * (ledge_type_rand > 0 && ledge_type_rand < 3) +
+    3 * (ledge_type_rand >= 3));
+const ledge_overhang = rand_uniform(0.16, 0.22);
+
+rule Ledge(is_top) :: ledge_type == 1 = {
+  size(size_x + 0.1, size_y, size_z  + 0.1)
+  centerX
+  centerZ
+  Ledge1_
+  MaybeRoof(is_top)
+};
+rule Ledge(is_top) :: ledge_type == 2 = {
+  splitY("sss",
+    2.5, {
+      size(size_x + 0.3 * ledge_overhang, size_y, size_z + 0.3 * ledge_overhang)
+      centerX
+      centerZ
+      Ledge1_
+    },
+    1, {
+      size(size_x + 1.5 * ledge_overhang, size_y, size_z + 1.5 * ledge_overhang)
+      centerX
+      centerZ
+      Ledge2_
+    },
+    1, {
+      size(size_x + 2.0 * ledge_overhang, size_y, size_z + 2.0 * ledge_overhang)
+      centerX
+      centerZ
+      Ledge3_
+      MaybeRoof(is_top)
+    }
+  )
+};
+rule Ledge(is_top) :: ledge_type == 3 = {
+  [
+    translateY(-size_y)
+    splitFace("vertical", {
+      extrude(ledge_overhang * 0.7)
+      splitX("s(fs)",
+        0.5, {},
+        0.12, { mesh("assets/venice_ledge_decoration.obj") LedgeDecoration_ },
+        0.5, {}
+      )
+    })
+  ]
+
+  size(size_x + 2 * ledge_overhang, size_y, size_z + 2 * ledge_overhang)
+  centerX
+  centerZ
+  ffdTranslate(0, 0, 0,  ledge_overhang * 0.3, 0,  ledge_overhang * 0.3)
+  ffdTranslate(0, 0, 1,  ledge_overhang * 0.3, 0, -ledge_overhang * 0.3)
+  ffdTranslate(1, 0, 0, -ledge_overhang * 0.3, 0,  ledge_overhang * 0.3)
+  ffdTranslate(1, 0, 1, -ledge_overhang * 0.3, 0, -ledge_overhang * 0.3)
+  ffdApply
+  Ledge_
+
+  MaybeRoof(is_top)
+};
+
+rule MaybeRoof(is_top) : 0.75 :: is_top = {
+  splitFace("top", { rotateScopeXYToXZ ScaleRoof })
+};
+rule MaybeRoof(is_top) : top_block_chance :: is_top = {
+  set("top_block_chance", 0.0)
+  BuildingTop
+};
+rule BuildingTop = {
+  splitFace("top", {
+    rotateScopeXYToXZ
+    scale(0.75)
+    centerX
+    centerZ
+    extrude(0.9 * floor_height)
+    splitY("sf",
+      floor_height, { FloorBlock },
+      ledge_height, { Ledge(true) }
+    )
+  })
+};
+rule MaybeRoof(is_top) :: !is_top = {};
+
+rule ScaleRoof : 1.5 = {
+  MaybeRoofLedge
+};
+rule ScaleRoof = {
+  size(size_x + ledge_overhang, size_y, size_z + ledge_overhang)
+  centerX
+  centerZ
+  MaybeRoofLedge
+};
+rule ScaleRoof = {
+  size(size_x - 2 * ledge_overhang, size_y, size_z - 2 * ledge_overhang)
+  centerX
+  centerZ
+  MaybeRoofLedge
+};
+
+rule MaybeRoofLedge = {
+  Roof
+};
+rule MaybeRoofLedge = {
+  extrude(0.5 * ledge_height)
+  RoofLedge_
+  splitFace("top", {
+    rotateScopeXYToXZ
+    Roof
+  })
+};
+
+const roof_angle = rand_uniform(33.0, 42.0);
+
+rule Roof : 0.75 = {
+  MaybeMansard
+  roofHip(roof_angle)
+  Roof_
+};
+rule Roof : 0.25 = {
+  MaybeMansard
+  roofGable(roof_angle)
+  Roof_
+};
+
+rule MaybeMansard = {
+};
+rule MaybeMansard :: size_x >= size_z = {
+  Mansard
+  rotateScopeY(180)
+  Mansard
+};
+rule MaybeMansard :: size_x < size_z = {
+  rotateScopeY(90)
+  Mansard
+  rotateScopeY(180)
+  Mansard
+};
+
+const mansard_roof_has_ledge = rand_uniform(0, 1.0) > 0.3;
+rule Mansard = {
+  set("mansard_size_x", 0.2 * size_x)
+  set("mansard_offset_z", 0.03 * size_z)
+  set("mansard_offset_y", mansard_offset_z * tan(roof_angle))
+
+  translate(0.5 * (size_x - mansard_size_x), mansard_offset_y, size_z * 0.5)
+  size(mansard_size_x, 0, size_z * 0.5 - mansard_offset_z)
+  extrude(size_z * tan(roof_angle) - mansard_offset_y - tan(roof_angle) * 0.5 * mansard_size_x)
+
+  MansardSplit(mansard_roof_has_ledge)
+};
+
+rule MansardSplit(roof_ledge) :: !roof_ledge = {
+  splitFace(
+    "front", { MansardFloor },
+    "vertical", { Wall_ },
+    "top", {
+      rotateScopeXYToXZ
+      roofGable(25)  // Or use roof_angle?
+      MansardRoof_
+    }
+  )
+};
+rule MansardSplit(roof_ledge) :: roof_ledge = {
+  splitY("sf",
+    1, {
+      splitFace(
+        "front", { MansardFloor },
+        "vertical", { Wall_ },
+        "top", {
+          translateZ(ledge_height)
+          rotateScopeXYToXZ
+          roofGable(25)  // Or use roof_angle?
+          MansardRoof_
+        }
+      )
+    },
+    ledge_height, { Ledge(false) }
+  )
+};
+
+rule MansardFloor = {
+  splitY("sss",
+    0.1, { Wall_ },
+    1, {
+      splitX("sf(sf)s",
+        0.7 * win_gap, { Wall_ },
+        win_width * 0.9, { set("level", 0) Window },
+        win_gap, { Wall_ },
+        win_width * 0.9, { set("level", 0) Window },
+        0.7 * win_gap, { Wall_ }
+      )
+    },
+    0.25, { Wall_ }
+  )
+};
+
+rule Window :: occlusion == "partial" || occlusion == "full" = {
+  Wall_
+};
+rule Window :: occlusion == "none" = {
+  WindowNoOcc
+};
+
+const window_type = rand_int(0, 3);
+// For the ground floor its 50/50 between same type as upper floors and random.
+const window_type_ground_floor = lerp(rand_int(0, 3), window_type, rand_uniform(0.0, 1.0) > 0.5);
+rule WindowNoOcc :: level > 0 && window_type == 0 = { Window0 };
+rule WindowNoOcc :: level > 0 && window_type == 1 = { Window1 };
+rule WindowNoOcc :: level > 0 && window_type == 2 = { Window2 };
+rule WindowNoOcc :: level > 0 && window_type == 3 = { Window3 };
+rule WindowNoOcc :: level == 0 && window_type_ground_floor == 0 = { Window0 };
+rule WindowNoOcc :: level == 0 && window_type_ground_floor == 1 = { Window1 };
+rule WindowNoOcc :: level == 0 && window_type_ground_floor == 2 = { Window2 };
+rule WindowNoOcc :: level == 0 && window_type_ground_floor == 3 = { Window3 };
+
+const win_door0_frame_width = 0.14;
+const win_door0_frame_inner_width = 0.08;
+rule Window0 = {
+  splitX("fsf",
+    win_door0_frame_width, { WindowDoor0Frame },
+    1, {
+      splitY("fsf",
+        win_door0_frame_width, { WindowDoor0Frame },
+        1, { Window0Inner },
+        win_door0_frame_width, { WindowDoor0Frame }
+      )
+    },
+    win_door0_frame_width, { WindowDoor0Frame }
+  )
+};
+rule Window0Inner = {
+  translateZ(-0.18)
+  splitX("fsfsf",
+    win_door0_frame_inner_width, { WindowDoor0FrameInner },
+    1, { Window0InnerInner },
+    win_door0_frame_inner_width, { WindowDoor0FrameInner },
+    1, { Window0InnerInner },
+    win_door0_frame_inner_width, { WindowDoor0FrameInner }
+  )
+};
+rule Window0InnerInner = {
+  splitY("fsfsf",
+    win_door0_frame_inner_width, { WindowDoor0FrameInner },
+    1, { Window0InerIner_ },
+    win_door0_frame_inner_width, { WindowDoor0FrameInner },
+    1, { Window0InerIner_ },
+    win_door0_frame_inner_width, { WindowDoor0FrameInner }
+  )
+};
+rule WindowDoor0Frame = {
+  extrude(0.4)
+  translateZ(-0.32)
+  WindowDoor0Frame_
+};
+rule WindowDoor0FrameInner = {
+  extrude(win_door0_frame_inner_width)
+  WindowDoor0FrameInner_
+};
+
+const win_door1_frame_width = 0.14;
+const win_door1_frame_inner_width = 0.08;
+rule Window1 = {
+  splitX("fsf",
+    win_door1_frame_width, { WindowDoor1Frame },
+    1, {
+      splitY("fsf",
+        win_door1_frame_width, { Window1FrameThick },
+        1, { Window1Inner },
+        win_door1_frame_width, { WindowDoor1FrameTop }
+      )
+    },
+    win_door1_frame_width, { WindowDoor1Frame }
+  )
+};
+// TODO(stefalie): This and the next rule are pretty much identical to Window0Inner*.
+rule Window1Inner = {
+  translateZ(-0.3)
+  splitX("fsfsf",
+    win_door1_frame_inner_width, { WindowDoor1FrameInner },
+    1, { Window1InnerInner },
+    win_door1_frame_inner_width, { WindowDoor1FrameInner },
+    1, { Window1InnerInner },
+    win_door1_frame_inner_width, { WindowDoor1FrameInner }
+  )
+};
+rule Window1InnerInner = {
+  splitY("fsfsf",
+    win_door1_frame_inner_width, { WindowDoor1FrameInner },
+    1, { Window1InnerInner_ },
+    win_door1_frame_inner_width, { WindowDoor1FrameInner },
+    1, { Window1InnerInner_ },
+    win_door1_frame_inner_width, { WindowDoor1FrameInner }
+  )
+};
+rule Window1FrameThick = {
+  scaleX(1.65)
+  centerX
+  extrude(0.47)
+  translateZ(-0.34)
+  Window1FrameThick_
+};
+rule WindowDoor1Frame = {
+  extrude(0.4)
+  translateZ(-0.34)
+  WindowDoor1Frame_
+};
+rule WindowDoor1FrameInner = {
+  extrude(win_door1_frame_inner_width)
+  WindowDoor1FrameInner_
+};
+const win1_ffd_offset = 0.04;
+const win1_frame_top_angle = 12.0;
+rule WindowDoor1FrameTop = {
+  scaleX(1.35)
+  centerX
+  translateZ(-0.34)
+  scaleY(0.5)
+  [
+    extrude(0.42)
+    FrameTop_
+  ]
+  translateY(size_y)
+  scaleX(1.04)
+  centerX
+  [
+    extrude(0.43)
+    FrameTop_
+  ]
+  translateY(size_y)
+  scaleX(1.1)
+  centerX
+  scaleY(1.4)
+  [
+    extrude(0.47)
+    [
+      ffdTranslateX(0, 1, 0, -win1_ffd_offset)
+      ffdTranslateX(0, 1, 1, -win1_ffd_offset)
+      ffdTranslateX(1, 1, 0,  win1_ffd_offset)
+      ffdTranslateX(1, 1, 1,  win1_ffd_offset)
+      ffdApply
+      FrameTop_
+    ]
+    translate(-win1_ffd_offset, size_y, -0.1 * size_z)
+    sizeX(size_x + 2 * win1_ffd_offset)
+    [
+      scaleX(0.5 / cos(win1_frame_top_angle))
+      rotateZ(win1_frame_top_angle)
+      set("ffd_offset_diag", tan(win1_frame_top_angle) * size_y)
+      [
+        ffdTranslateX(1, 1, 0, ffd_offset_diag)
+        ffdTranslateX(1, 1, 1, ffd_offset_diag)
+        ffdApply
+        FrameTop_
+      ]
+      translateX(size_x)
+      rotateZ(-2 * win1_frame_top_angle)
+      [
+        ffdTranslateX(0, 1, 0, -ffd_offset_diag)
+        ffdTranslateX(0, 1, 1, -ffd_offset_diag)
+        ffdApply
+        FrameTop_
+      ]
+    ]
+  ]
+};
+
+const win2_ratio = mesh_info("assets/venice_spiky_window_wall.obj", "size_y") / mesh_info("assets/venice_spiky_window.obj", "size_y");
+rule Window2 = {
+  splitY("sf", 
+    1, {},
+    size_y * win2_ratio, { mesh("assets/venice_spiky_window_wall.obj") Wall_ }
+  ) 
+
+  [
+    translateZ(-0.2)
+    Wall_
+  ]
+
+  mesh("assets/venice_spiky_window.obj")
+  translateZ(-0.8 * size_z)
+  WindowSpiky_
+};
+
+// TODO(stefalie): Very similar to Window2, merge?
+const window_door3_wall_rel_size = 0.29379887;
+rule Window3 = {
+
+  [
+    sizeZ(0.3)
+    translateZ(-0.2)
+    DoorRoundPlane_
+    mesh("assets/venice_round_window.obj")
+    DoorRoundFrame_
+  ]
+
+  splitY("sf", 
+    1, {},
+    size_y * window_door3_wall_rel_size, { 
+      mesh("assets/venice_round_window_wall.obj")
+      Wall_
+    }
+  ) 
+};
+
+rule Door :: occlusion == "partial" || occlusion == "full" = {
+  Wall_
+};
+rule Door :: occlusion == "none" = {
+  DoorNoOcc
+};
+
+rule DoorNoOcc :: window_type_ground_floor == 0 = { Door0 };
+rule DoorNoOcc :: window_type_ground_floor == 1 = { Door1 };
+rule DoorNoOcc :: window_type_ground_floor == 2 = { Door2 };
+rule DoorNoOcc :: window_type_ground_floor == 3 = { Door3 };
+
+// TODO(stefalie): All the door rules are very similar to the window rules, can
+// they, or at least some, be combined?
+rule Door0 = {
+  splitX("fsf", 
+    win_door0_frame_width, { WindowDoor0Frame },
+    1, {
+      splitY("sf", 
+        1, { Door0Inner },
+        win_door0_frame_width, { WindowDoor0Frame }
+      )
+    },
+    win_door0_frame_width, { WindowDoor0Frame }
+  )
+};
+rule Door0Inner = {
+  translateZ(-0.3)
+  splitX("fsf",
+    win_door0_frame_inner_width, { WindowDoor0FrameInner },
+    1, {
+      splitY("fsf", 
+        win_door0_frame_inner_width, { WindowDoor0FrameInner },
+        1, { Door0Inner_ },
+        win_door0_frame_inner_width, { WindowDoor0FrameInner }
+      )
+    },
+    win_door0_frame_inner_width, { WindowDoor0FrameInner }
+  )
+};
+
+// TODO(stefalie): This is again almoast identical, except for the sizes and the
+// top frame, to the rules of Door0*, merge and parameterize them.
+rule Door1 = {
+  splitX("fsf", 
+    win_door1_frame_width, { WindowDoor1Frame },
+    1, {
+      splitY("sf", 
+        1, { Door1Inner },
+        win_door1_frame_width, { WindowDoor1FrameTop }
+      )
+    },
+    win_door1_frame_width, { WindowDoor1Frame }
+  )
+};
+
+rule Door1Inner = {
+  translateZ(-0.3)
+  splitX("fsf",
+    win_door1_frame_inner_width, { WindowDoor1FrameInner },
+    1, {
+      splitY("fsf", 
+        win_door1_frame_inner_width, { WindowDoor1FrameInner },
+        1, { Door1Inner_ },
+        win_door1_frame_inner_width, { WindowDoor1FrameInner }
+      )
+    },
+    win_door1_frame_inner_width, { WindowDoor1FrameInner }
+  )
+};
+
+const door2_ratio = mesh_info("assets/venice_spiky_door_wall.obj", "size_y") / mesh_info("assets/venice_spiky_door.obj", "size_y");
+rule Door2 = {
+  splitY("sf", 
+    1, {},
+    size_y * door2_ratio, { 
+      mesh("assets/venice_spiky_door_wall.obj")
+      translateZ(-size_z)
+      Wall_
+    }
+  ) 
+
+  mesh("assets/venice_spiky_door.obj")
+  translateZ(-0.8 * size_z)
+  DoorSpiky_
+};
+
+// TODO(stefalie): Very similar to Door2, merge?
+rule Door3 = {
+  [
+    sizeZ(0.5)
+    translateZ(-0.4)
+    DoorRoundPlane_
+    mesh("assets/venice_round_door.obj")
+    DoorRoundFrame_
+  ]
+
+  splitY("sf", 
+    1, {},
+    size_y * window_door3_wall_rel_size, { 
+      mesh("assets/venice_round_door_wall.obj")
+      Wall_
+    }
+  ) 
+};

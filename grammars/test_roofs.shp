@@ -1,0 +1,475 @@
+// Shape Modeling Language (ShapeML)
+// Copyright (C) 2019  Stefan Lienhard
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+#include "test_color_palette.shp"
+
+const spacing = 15.0;
+
+rule Axiom = {
+  // Most of the following test cases come from:
+  // src/shapeml/geometry/skeleton/skeleton_test.cc
+
+  // Convex test cases
+
+  [
+    size(10, 0, 10)
+    polygon( 1.0,  1.0,
+            20.0,  5.0,
+            30.0, 25.0,
+            20.0, 30.0,
+             1.0, 10.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    size(10, 0, 10.0 * 39.0 / 60.0)
+    polygon(30.0,  1.0,
+            50.0,  1.0,
+            70.0,  1.0,
+            90.0,  1.0,
+            40.0, 40.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    size(10, 0, 10)
+    polygon(10.0, 60.0,
+            15.0, 55.0,
+            30.0, 50.0,
+            30.0, 70.0,
+            15.0, 65.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    size(10.0 * 30.0 / 48.0, 0, 10)
+    polygon( 0.0, 35.0,
+            30.0, 35.0,
+            30.0, 48.0,
+             0.0, 48.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    size(10, 0, 10)
+    polygon( 0.0,  80.0,
+            10.0,  70.0,
+            20.0,  70.0,
+            30.0,  80.0,
+            30.0,  90.0,
+            20.0, 100.0,
+            10.0, 100.0,
+             0.0,  90.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    // Regular n-gon
+    size(10, 0, 10)
+    polygon(50.0 + 15.0 * cos(0 * 360 / 5), 50.0 + 15.0 * sin(0 * 360 / 5),
+            50.0 + 15.0 * cos(1 * 360 / 5), 50.0 + 15.0 * sin(1 * 360 / 5),
+            50.0 + 15.0 * cos(2 * 360 / 5), 50.0 + 15.0 * sin(2 * 360 / 5),
+            50.0 + 15.0 * cos(3 * 360 / 5), 50.0 + 15.0 * sin(3 * 360 / 5),
+            50.0 + 15.0 * cos(4 * 360 / 5), 50.0 + 15.0 * sin(4 * 360 / 5))
+    RoofModels
+  ]
+
+  // Concave test cases
+
+  translateZ(spacing)
+
+  [
+    size(10, 0, 10.0 * 20.0 / 30.0)
+    polygon( 90.0,  0.0,
+            110.0,  0.0,
+            115.0, 20.0,
+            100.0, 10.0,
+             85.0, 20.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    size(10, 0, 10.0 * 25.0 / 30.0)
+    polygon( 70.0, 20.0,
+            100.0, 20.0,
+             95.0, 30.0,
+             85.0, 30.0,
+             80.0, 45.0,
+             70.0, 40.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    size(10, 0, 10.0 * 40.0 / 50.0)
+    polygon(100.0, 20.0,
+            150.0, 20.0,
+            140.0, 60.0,
+            125.0, 30.0,
+            110.0, 60.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    // L
+    size(10, 0, 10)
+    polygon( 70.0, 50.0,
+            100.0, 50.0,
+            100.0, 60.0,
+             80.0, 60.0,
+             80.0, 80.0,
+             70.0, 80.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    // L with two widths
+    size(10, 0, 7.5)
+    polygon( 90.0,  70.0,
+            130.0,  70.0,
+            130.0,  80.0,
+            110.0,  80.0,
+            110.0, 100.0,
+             90.0, 100.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    // Cross
+    size(10, 0, 10)
+    polygon(50.0,  70.0,
+            60.0,  70.0,
+            60.0,  90.0,
+            80.0,  90.0,
+            80.0, 100.0,
+            60.0, 100.0,
+            60.0, 120.0,
+            50.0, 120.0,
+            50.0, 100.0,
+            30.0, 100.0,
+            30.0,  90.0,
+            50.0,  90.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    // Wind rose
+    size(10, 0, 10)
+    polygon(45.0, 110.0,
+            50.0, 125.0,
+            65.0, 130.0,
+            50.0, 135.0,
+            45.0, 150.0,
+            40.0, 135.0,
+            25.0, 130.0,
+            40.0, 125.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    // Fig. 3 in:
+    // Felkel, Obdrzalek, 1998, Straight Skeleton Implementation
+    size(10, 0, 22.5 / 3.5)
+    polygon( 65.0, 105.0,
+            100.0, 105.0,
+            100.0, 127.5,
+             95.0, 117.5,
+             85.0, 127.5,
+             75.0, 117.5,
+             65.0, 127.5)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    // Fig. 5 in:
+    // Felkel, Obdrzalek, 1998, Straight Skeleton Implementation
+    size(10, 0, 2.5)
+    polygon(135.0, 60.0,
+            195.0, 60.0,
+            187.5, 85.0,
+            180.0, 67.5,
+            172.5, 85.0,
+            165.0, 65.0,
+            157.5, 85.0,
+            150.0, 67.5,
+            142.5, 85.0)
+    RoofModels
+  ]
+
+
+  translateZ(spacing)
+
+  [
+    // V
+    size(8, 0, 10)
+    polygon(190.0,  0.0,
+            200.0, 25.0,
+            190.0, 15.0,
+            180.0, 25.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    // V skewed
+    size(10, 0, 10.0 * 25.0 / 35.0)
+    polygon(170.0,  0.0,
+            180.0, 25.0,
+            165.0, 15.0,
+            155.0, 25.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    // V skewed 2
+    size(10, 0, 10)
+    polygon(190.0,  85.0,
+            200.0, 110.0,
+            192.0, 100.0,
+            175.0, 110.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    // Z
+    size(10, 0, 10)
+    polygon(155.0, 25.0,
+            190.0, 25.0,
+            195.0, 30.0,
+            170.0, 35.0,
+            195.0, 55.0,
+            185.0, 60.0,
+            158.0, 60.0,
+            155.0, 53.0,
+            182.0, 49.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    size(10, 0, 10.0 * 25.0 / 30.0)
+    polygon( 0.0, 180.0,
+            26.0, 180.0,
+             2.0, 175.0,
+            30.0, 175.0,
+            30.0, 200.0,
+            15.0, 190.0,
+             5.0, 200.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    size(10, 0, 10.0 * 25.0 / 30.0)
+    polygon( 0.0, 145.0,
+            28.0, 145.0,
+            12.0, 150.0,
+            30.0, 150.0,
+            30.0, 170.0,
+            15.0, 152.0,
+             5.0, 170.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    size(10, 0, 10)
+    polygon(15.0, 100.0,
+            25.0, 100.0,
+            25.0, 110.0,
+            30.0, 115.0,
+            40.0, 115.0,
+            40.0, 125.0,
+            25.0, 125.0,
+            25.0, 140.0,
+            15.0, 140.0,
+            15.0, 127.0,
+            13.0, 125.0,
+             0.0, 125.0,
+             0.0, 115.0,
+            15.0, 115.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    size(10, 0, 10.0 * 45.0 / 65.0)
+    polygon(105.0, 105.0,
+            120.0, 105.0,
+            120.0,  90.0,
+            130.0,  90.0,
+            130.0, 105.0,
+            170.0, 105.0,
+            170.0, 115.0,
+            155.0, 115.0,
+            155.0, 135.0,
+            145.0, 135.0,
+            145.0, 115.0,
+            130.0, 115.0,
+            130.0, 130.0,
+            120.0, 130.0,
+            120.0, 115.0,
+            105.0, 115.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    // Cross uneven
+    size(10.0 * 50.0 / 60.0, 0, 10)
+    polygon(170.0, 115.0,
+            180.0, 115.0,
+            180.0, 135.0,
+            200.0, 135.0,
+            200.0, 155.0,
+            180.0, 155.0,
+            180.0, 175.0,
+            170.0, 175.0,
+            170.0, 155.0,
+            150.0, 155.0,
+            150.0, 135.0,
+            170.0, 135.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    size(10, 0, 10)
+    polygon( 0.0,  0.0,
+             5.0,  0.0,
+             7.5,  2.5,
+            10.0,  0.0,
+            10.0,  5.0,
+             8.0,  5.0,
+            10.0,  8.0,
+            10.0, 10.0,
+             5.0,  5.0,
+             2.0, 10.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    size(6, 0, 10)
+    polygon( 0.0,  50.0,
+             0.0,   0.0,
+            30.0,   0.0,
+            60.0,   0.0,
+            90.0,   0.0,
+            90.0, 120.0,
+            45.0, 160.0,
+             0.0, 120.0)
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    size(10, 0, 10)
+    quad
+    RoofModels
+  ]
+
+  translateZ(spacing)
+
+  [
+    size(7, 0, 10)
+    quad
+    RoofModels
+  ]
+};
+
+const shed_1    = { roofShed(30.0) };
+const pyramid_1 = { roofPyramid(6.0) };
+const pyramid_2 = { roofPyramid(6.0, 0.5) };
+const hip_1     = { roofHip(40) };
+const hip_2     = { roofHip(40, 0.5) };
+const gable_1   = { roofGable(40) };
+const gable_2   = { roofGable(40, 0.5, 0.5) };
+
+rule RoofModels = {
+  MassModel(shed_1)    translateX(spacing)
+  MassModel(pyramid_1) translateX(spacing)
+  MassModel(pyramid_2) translateX(spacing)
+  MassModel(hip_1)     translateX(spacing)
+  MassModel(hip_2)     translateX(spacing)
+  MassModel(gable_1)   translateX(spacing)
+  MassModel(gable_2)   translateX(spacing)
+};
+
+rule MassModel(roof_ops) = {
+  extrude(6)
+  Wall
+  splitFace("top", {
+    rotateScopeXYToXZ
+    ^roof_ops
+    Roof
+  })
+};
+
+rule Roof = {
+  splitFaceAlongDir(0.0, 1.0, 0.0, 89.0, { RoofMaterial })
+  splitFaceAlongDir(0.0, -1.0, 0.0, 91.0, { Wall })
+};
+
+rule RoofMaterial = {
+  color(color_5)
+  extrudeWorld(0.0, 1.0, 0.0, 0.2)
+  RoofMaterial_
+};
+
+rule Wall = {
+  color(color_0)
+  Wall_
+};
+

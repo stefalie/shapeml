@@ -1,0 +1,90 @@
+// Shape Modeling Language (ShapeML)
+// Copyright (C) 2019  Stefan Lienhard
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+const grid_side_length = 96;
+const underground_height = 32;
+const height_map_height = 32;
+const grass_level = underground_height + 0.5 * height_map_height;
+
+// Terrain colors
+const gray_rgb  =   0.5;
+const beige_r   = 219.0 / 255.0;
+const beige_g   = 206.0 / 255.0;
+const beige_b   =  98.0 / 255.0;
+const green_r   =  11.7 / 255.0;
+const green_g   = 189.0 / 255.0;
+const green_b   =  72.0 / 255.0;
+const white_rgb =   1.0;
+
+rule Axiom = {
+  size(1, 1, 1)
+
+  repeat(grid_side_length, {
+    translateX(index)
+    repeat(grid_side_length, {
+      translateZ(index)
+      set("height", height_map(pos_world_x, pos_world_z))
+      repeat(underground_height + height_map_height, {
+        translateY(index)
+        set("noise", noise(pos_world_x, pos_world_y, pos_world_z))
+        set("value", voxel_value(pos_world_y, height, noise))
+        Voxel
+      })
+    })
+  })
+};
+
+func height_map(x, z) =
+  fBm(x, z, 4) * 0.4 * height_map_height +
+  0.5 * height_map_height +
+  underground_height
+;
+
+func voxel_value(y, terrain_height, noise) =
+  // If above height map -> set to 0.
+  (y <= terrain_height) *
+
+  // If less than 10% below surface -> set to 1.
+  ((y >  0.9 * terrain_height) +
+
+   // If more than 10% below surface -> set to same noise function as
+   // below the height map.
+   (y <= 0.9 * terrain_height) * noise)
+;
+
+rule Voxel :: value <= 0.0 = {};
+rule Voxel :: value > 0.0 && pos_world_y <= underground_height = {
+  cube
+  color(lerp(gray_rgb, beige_r, pos_world_y / underground_height),
+        lerp(gray_rgb, beige_g, pos_world_y / underground_height),
+        lerp(gray_rgb, beige_b, pos_world_y / underground_height))
+  SolidVoxel_
+};
+rule Voxel :: value > 0.0 && pos_world_y > underground_height && pos_world_y <= grass_level= {
+  cube
+  color(lerp(beige_r, green_r, (pos_world_y - underground_height) / (grass_level - underground_height)),
+        lerp(beige_g, green_g, (pos_world_y - underground_height) / (grass_level - underground_height)),
+        lerp(beige_b, green_b, (pos_world_y - underground_height) / (grass_level - underground_height)))
+  SolidVoxel_
+};
+rule Voxel :: value > 0.0 && pos_world_y > grass_level = {
+  cube
+  color(lerp(green_r, white_rgb, (pos_world_y - grass_level) / (underground_height + height_map_height - grass_level)),
+        lerp(green_g, white_rgb, (pos_world_y - grass_level) / (underground_height + height_map_height - grass_level)),
+        lerp(green_b, white_rgb, (pos_world_y - grass_level) / (underground_height + height_map_height - grass_level)))
+  SolidVoxel_
+};
+

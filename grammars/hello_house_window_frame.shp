@@ -1,0 +1,72 @@
+// Shape Modeling Language (ShapeML)
+// Copyright (C) 2019  Stefan Lienhard
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+param frame_thickness = 0.05;
+param grill_thickness = 0.025;
+param frame_width = 0.8;
+param frame_height = 1.2;
+
+rule Axiom = {
+  size(frame_width, 0.0, frame_height)
+  quad
+  rotateX(90.0)
+  rotateScopeX(-90.0)
+  FrameAndGrill
+};
+
+rule FrameAndGrill = {
+  splitX("fsf",
+    frame_thickness, { Piece(frame_thickness) },
+    1.0, {
+      splitY("fsf",
+        frame_thickness, { Piece(frame_thickness) },
+        1.0,             { Grill },
+        frame_thickness, { Piece(frame_thickness) }
+      )
+    },
+    frame_thickness, { Piece(frame_thickness) }
+  )
+};
+
+rule Piece(thickness) = {
+  extrude(thickness)
+  Piece_
+};
+
+rule Grill = {
+  splitX("sfs",
+    1.0, {
+      splitY("sfsfs",
+        1.0,             {},
+        grill_thickness, { Piece(grill_thickness) },
+        1.0,             {},
+        grill_thickness, { Piece(grill_thickness) },
+        1.0,             {}
+      )
+    },
+    grill_thickness, { Piece(grill_thickness) },
+    1.0, {
+      splitY("sfsfs",
+        1.0,             {},
+        grill_thickness, { Piece(grill_thickness) },
+        1.0,             {},
+        grill_thickness, { Piece(grill_thickness) },
+        1.0,             {}
+      )
+    }
+  )
+};
+

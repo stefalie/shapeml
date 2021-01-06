@@ -1,0 +1,168 @@
+// Shape Modeling Language (ShapeML)
+// Copyright (C) 2019  Stefan Lienhard
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// Attributes
+param arc_num_bricks = 7;
+param arc_radius = 9.0;
+
+param rand_range = 0.3;
+
+param frame_num_bricks = 9;
+
+param brick_depth = 7.0;
+param brick_width = 7.0;
+param brick_variation = 0.04;
+param brick_fancy = true;
+
+param has_bottom = true;
+
+// Other variables
+const arc_angle = 180.0 / arc_num_bricks;
+const arc_segment_length = sin(arc_angle * 0.5) * arc_radius * 2.0;
+
+rule Axiom = {
+  // This operatos in a strange coordinate sytem (O is the origin, the y-axis
+  // points towards you):
+  // 
+  //         ^ x-axis
+  //    ___  |
+  //  /     \| 
+  // +-------O-----> z-axis
+  // |       |
+  // |       |
+  // +-------+
+
+  rotateX(90)
+  rotateY(90)
+  set("is_wedge", true)
+  Arc(arc_num_bricks)
+  set("is_wedge", false)
+  [
+    FrameSide(frame_num_bricks, 0)
+    translate(0, brick_depth, -2 * arc_radius)
+    rotateX(180)
+    FrameSide(frame_num_bricks, 1)
+  ]
+  [
+    translate(-(1 + frame_num_bricks) * arc_segment_length, 0, -2 * arc_radius)
+    FrameBottom
+  ]
+};
+
+rule Arc(n) :: n == 0 = {};
+rule Arc(n) :: n > 0 = {
+  rotateY(arc_angle * 0.5)
+  size(arc_segment_length, 0, brick_width)
+  translateY(rand_uniform(-rand_range, rand_range))
+  Brick((n % 2 == 0) * 2 - 1)
+  translateX(arc_segment_length)
+  rotateY(arc_angle * 0.5)
+  Arc(n - 1)
+};
+
+rule FrameBottom :: !has_bottom = {};
+rule FrameBottom :: has_bottom = {
+  size(arc_segment_length, 0, 2 * arc_radius + brick_width)
+  translateZ(-0.5 * brick_width)
+  quad
+  splitZ(
+    "sss",
+    1.1, { translateX(-0.1 * size_x) scaleX(1.1) Brick(0) },
+    1.0, {
+      translate(rand_uniform(-rand_range, rand_range), rand_uniform(-rand_range, rand_range), 0.0)
+      rotateZ(rand_uniform(-rand_range, rand_range) * 10)
+      Brick(0)
+    },
+    1.1, { translateX(-0.1 * size_x) scaleX(1.1) Brick(0.0) }
+  )
+};
+
+rule FrameSide(n, offset) = {
+  size(n * arc_segment_length, 0, brick_width)
+  translateX(-size_x)
+  quad
+  splitX(
+    "(s)s",
+    arc_segment_length, {
+      translate(0.0, rand_uniform(-rand_range, rand_range), rand_uniform(-rand_range, rand_range))
+      rotateX(rand_uniform(-rand_range, rand_range) * 10.0)
+      Brick(((index + offset) % 2) * 2 - 1)
+    },
+    arc_segment_length, { scaleZ(1.2) Brick(true) }
+  )
+};
+
+rule Brick(variation) = {
+  quad
+  extrude(brick_depth)
+  scaleCenterY(1.0 + variation * brick_variation * 2)
+  scaleZ(      1.0 + variation * brick_variation)
+  FancyBrickOrNot 
+};
+
+rule FancyBrickOrNot :: !brick_fancy = {
+  SimpleBrick_
+};
+
+const offset = brick_width * 0.05;
+rule FancyBrickOrNot :: brick_fancy = {
+  // Top edges
+  trimPlane(-1,  1,  0,          offset, size_y,               0)
+  trimPlane( 1,  1,  0, size_x - offset, size_y,               0)
+  trimPlane( 0,  1, -1,               0, size_y,          offset)
+  trimPlane( 0,  1,  1,               0, size_y, size_z - offset)
+
+  // Bottom edges
+  trimPlane(-1, -1,  0,          offset,      0,               0)
+  trimPlane( 1, -1,  0, size_x - offset,      0,               0)
+  trimPlane( 0, -1, -1,               0,      0,          offset)
+  trimPlane( 0, -1,  1,               0,      0, size_z - offset)
+
+  // Side edges
+  trimPlane(-1,  0, -1,          offset,      0,               0)
+  trimPlane( 1,  0, -1, size_x - offset,      0,               0)
+  trimPlane( 1,  0,  1, size_x - offset,      0, size_z         )
+  trimPlane(-1,  0,  1,          offset,      0, size_z         )
+
+  // Top corners
+  trimPlane(-1,  1, -1,          offset, size_y,          offset)
+  trimPlane( 1,  1, -1, size_x - offset, size_y,          offset)
+  trimPlane( 1,  1,  1, size_x - offset, size_y, size_z - offset)
+  trimPlane(-1,  1,  1,          offset, size_y, size_z - offset)
+
+  // Bottom corners
+  trimPlane(-1, -1, -1,          offset,      0,          offset)
+  trimPlane( 1, -1, -1, size_x - offset,      0,          offset)
+  trimPlane( 1, -1,  1, size_x - offset,      0, size_z - offset)
+  trimPlane(-1, -1,  1,          offset,      0, size_z - offset)
+
+  trim
+  FancyBrickWedgeOrNot
+};
+
+rule FancyBrickWedgeOrNot :: !get("is_wedge") = {
+  FancyBrick_
+};
+rule FancyBrickWedgeOrNot :: get("is_wedge") = {
+  set("ffd_offset", tan(arc_angle * 0.5) * size_z)
+  ffdTranslateX(0, 0, 1, -get("ffd_offset"))
+  ffdTranslateX(0, 1, 1, -get("ffd_offset"))
+  ffdTranslateX(1, 0, 1,  get("ffd_offset"))
+  ffdTranslateX(1, 1, 1,  get("ffd_offset"))
+  ffdApply
+  FancyBrickWedge_
+};
+

@@ -1,0 +1,87 @@
+// Shape Modeling Language (ShapeML)
+// Copyright (C) 2019  Stefan Lienhard
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+#include "test_color_palette.shp"
+
+rule Axiom = {
+  size(5, 5, 5)
+  cube
+
+  [
+    translate(1, 1, 1)
+    rotateY(20)
+    GridCube
+
+    [
+      size(2, 2, 2)
+      translate(-0.5, -0.5, 0.5)
+      rotateZ(60)
+      rotateY(40)
+      rotateX(20)
+      OccluderCube
+    ]
+
+    [
+      size(4, 4, 4)
+      translate(2.0, 5.3, 5.2)
+      rotateZ(-70)
+      rotateY(-50)
+      rotateX(-40)
+      OccluderCube
+    ]
+  ]
+
+  [
+    size(2, 2, 2)
+    translateX(-6)
+    OccluderCube
+  ]
+
+  translate(-4.5, 0.0, 1.0)
+  rotateX(5)
+  rotateY(-3)
+
+  [
+    scale(1.0, 0.61, 0.49)
+    GridCube
+  ]
+
+  [
+    scale(0.5, 0.4, 1.0)
+    GridCube
+  ]
+};
+             
+rule OccluderCube = {
+  octreeAdd
+  color(color_1)
+  OccluderCube_
+};
+
+rule GridCube = {
+  splitFace("all", { Side })
+};
+
+rule Side = {
+  splitRepeatX(0.2, {
+    splitRepeatY(0.2, { Tile })
+  })
+};
+
+rule Tile :: occlusion("OccluderCube") == "none"    = { color(color_2) TileBlue_   };
+rule Tile :: occlusion("OccluderCube") == "partial" = { color(color_4) TileYellow_ };
+rule Tile :: occlusion("OccluderCube") == "full"    = { color(color_6) TileRed_    };
+

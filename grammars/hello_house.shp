@@ -1,0 +1,89 @@
+// Shape Modeling Language (ShapeML)
+// Copyright (C) 2019  Stefan Lienhard
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+const facade_color = "#dddddd";
+
+param height = 10;             // Parameters, unlike constants, can be set by the
+param roof_color = "#ad7859";  // user via cmd or modified interactively in the GUI.
+
+rule Axiom = {
+  size(8, 0, 11)  // Set the shape size to 8x11 m.
+  quad            // Create geometry of a quad for the building lot.
+  House           // Apply 'House' rule.
+};
+
+rule House = {
+  extrude(height)           // Extrude the building lot up to 10 m.
+  splitFace(                // Split the box mass model into faces.
+    "top",      { Roof },   // Apply rule 'Roof' to the top face.
+    "vertical", { Facade }  // Apply rule 'Facade' to all side faces.
+  )
+};
+
+rule Roof = {
+  color(roof_color) // Set color.
+  roofHip(40, 0.5)  // Create geometry for a 40 degree 'hip' type roof with 0.5 m overhang.
+  Roof_             // Create terminal shape with suffix _.
+};
+
+param dummy_facade = false;
+
+rule Facade :: dummy_facade = {
+  color(facade_color)
+  Facade_
+};
+
+rule Facade :: !dummy_facade = {
+  splitRepeatY(3, {    // Split the facade into stretchable floors of ~3 m each.
+    splitRepeatX(3, {  // Split the floor into stretchable window tiles of ~3 m each.
+      WindowTile
+    })
+  })
+};
+
+rule WindowTile = {
+  color(facade_color)
+  splitY("sfs",          // Vertically split the tile into 's'tretchable (proportionally
+    1.0, { Wall_ },      // sized) 'Wall_' terminals and a 'fixed' sized row with 1.2 m height.
+    1.2, {
+      splitX("sfffs",    // Horizontally split the row into 'Wall_', 'Shutter', and 'Window' shapes.
+        1.0, { Wall_ },
+        0.4, { extrude(0.08) color(roof_color) Shutter_ },  // Abuse roof color for shutters.
+        0.8, { Window },
+        0.4, { extrude(0.08) color(roof_color) Shutter_ },
+        1.0, { Wall_ }
+      )
+    },
+    1.0, { Wall_ }
+  )
+};
+
+rule Window = {
+  [                   // Push current shape onto the stack.
+    color("#aec3d8")
+    roughness(0.1)    // Make the glass more glossy/relfective.
+    Glass_
+  ]                   // Pop material adjustments off the stack again.
+
+  // Load OBJ mesh for window frame and grill. The asset path is relative to the grammar file.
+  // The OBJ itself was generated with 'grammars/hello_house_window_frame.shp'.
+  mesh("assets/hello_house_window_frame.obj")
+  color(0.47, 0.47, 0.47)
+  FrameAndGrill_
+};
+
+// Adding doors to the house is left as exercise to the reader.
+

@@ -1,0 +1,53 @@
+// An L-system from Aono, Kunii, 1984, Botanical Tree Image Generation as defined
+// on page 59 in:
+// Prusinkiewicz, Aristid Lindenmayer, 1990, The Algorithmic Beauty of Plants.
+
+#include "l-system_header.shp"
+
+param r1 =  0.9;      // Contraction ratio 1
+param r2 =  0.8;      // Contraction ratio 2
+param a1 = 35;        // Branching angle 1
+param a2 = 35;        // Branching angle 2
+param wr = 0.707;     // Width decrease rate
+param init_l = 10.0;  // Initial branch length
+param init_w = 4.5;   // Initial branch width
+param n = 9;          // Number of derivation iterations
+
+rule Axiom = {
+  color("#885533")
+  materialName("wood")
+
+  A(init_l, init_w, n)
+};
+
+rule A(l, w, n) :: n == 0 = {};
+rule A(l, w, n) :: n > 0  = {
+  ^exclamation(w)
+  ^F(l)
+  [
+    ^ampersand(a1)
+    B(l * r1, w * wr, n - 1)
+  ]
+  ^slash(180)
+  [
+    ^ampersand(a2)
+    B(l * r2, w * wr, n - 1)
+  ]
+};
+
+rule B(l, w, n) :: n == 0 = {};
+rule B(l, w, n) :: n > 0  = {
+  ^exclamation(w)
+  ^F(l)
+  [
+    ^plus(a1)
+    ^dollar
+    B(l * r1, w * wr, n - 1)
+  ]
+  [
+    ^minus(a2)
+    ^dollar
+    B(l * r2, w * wr, n - 1)
+  ]
+};
+

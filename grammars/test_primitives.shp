@@ -1,0 +1,141 @@
+// Shape Modeling Language (ShapeML)
+// Copyright (C) 2019  Stefan Lienhard
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+#include "test_color_palette.shp"
+
+rule Axiom = {
+  size(10, 0, 10)
+
+  [
+    color(color_2)
+    Primitives
+  ]
+
+  translateX(90)
+
+  [
+    color("#FFFFFF")
+    texture("assets/uv_test.png")
+    Primitives
+  ]
+};
+
+rule Primitives = {
+  [  // First row
+    quad
+    Quad_
+
+    translateX(15)
+
+    circle(11)
+    Circle_
+
+    translateX(15)
+
+    shapeL(4, 2)
+    ShapeL_
+
+    translateX(15)
+
+    shapeU(6, 4, 2)
+    ShapeU_
+
+    translateX(15)
+
+    polygon(0, 0, 5, 0, 7.5, 2.5, 10, 0, 10, 5, 8, 5, 10, 8, 10, 10, 5, 5, 2, 10)
+    Polygon_
+  ]
+
+  translateZ(-15)
+
+  [  // Second row
+    grid(3, 5)
+    Grid_
+
+    translateX(15)
+
+    disk(7, 3)
+    Disk_
+
+    translateX(15)
+
+    shapeT(2, 3, 0.4)
+    ShapeT_
+
+    translateX(15)
+
+    shapeH(4, 3, 2, 0.4)
+    ShapeH_
+  ]
+
+  scaleY(10)
+  translateZ(-15)
+
+  [  // Third row
+    cube
+    Cube_
+
+    translateX(15)
+
+    cylinderFlat(16, 2, 3)
+    CylinderFlat_
+
+    translateX(15)
+
+    sphereFlat(16, 16)
+    SphereFlat_
+
+    translateX(15)
+
+    coneFlat(10, 4, 3)
+    ConeFlat_
+
+    translateX(15)
+
+    sizeY(0.0)
+    torusFlat(4, 2, 19, 13)
+    TorusFlat_
+  ]
+
+  translateZ(-15)
+
+  [  // Fourth row
+    box(2, 5, 4)
+    Box_
+
+    translateX(15)
+
+    cylinder(16, 2, 3)
+    Cylinder_
+
+    translateX(15)
+
+    sphere(16, 16)
+    Sphere_
+
+    translateX(15)
+
+    cone(10, 4, 3)
+    Cone_
+
+    translateX(15)
+
+    sizeY(0.0)
+    torus(4, 2, 19, 13)
+    Torus_
+  ]
+};
+

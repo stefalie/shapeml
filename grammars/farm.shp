@@ -1,0 +1,458 @@
+// Shape Modeling Language (ShapeML)
+// Copyright (C) 2019  Stefan Lienhard
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+const roof_angle = 44;
+const roof_overhang = 0.8;
+const roof_thickness = 0.1;
+const roof_proportion = 0.4;
+const shed_roof_angle = 20;
+const shed_roof_overhang = 0.4;
+
+const main_width = 24;
+const main_height = 5.2;
+const main_depth = 14;
+
+const right_wing_width = 8;
+const right_wing_height = main_height;
+const right_wing_depth = 18;
+const right_wing_pos_x = main_width - right_wing_width - 1.8;
+const right_wing_pos_z = 0.5 * main_depth + roof_overhang;
+
+const left_shed_width = 3.5;
+const left_shed_height = 3;
+const left_shed_depth = 10;
+const left_shed_pos_x = -left_shed_width;
+const left_shed_pos_z = 3;
+
+const right_shed_width = 4;
+const right_shed_height = 2.5;
+const right_shed_depth = left_shed_depth;
+const right_shed_pos_x = main_width - 1.8;
+const right_shed_pos_z = right_wing_depth + right_wing_pos_z - right_shed_depth + 3;
+
+const silo_width = 6;
+const silo_height = 14;
+const silo_pos_x = main_width + 4.2;
+const silo_pos_z = 10.5;
+
+const floor_height = 3;
+const beam_width = 0.2;
+const beam_depth = 0.05;
+const window_height = 1.2;
+const tile_diag_width = 1.5;
+const tile_win_width = 1.2;
+const ground_floor_tile_width = 2.6;
+const ground_floor_door_width = 1.6;
+
+param roof_color = "#884125";
+param wood_color = "#583E2F";
+param dark_wood_color = "#381E10";
+param wall_color = "#DDDDDD";
+param silo_color = "#C2834F";
+param shed_color = "#7C5029";
+param glass_color = "#5C6EA6";
+param curtain_color = "#94C5F7";
+
+const tex_size = 3.0;
+
+rule Axiom = {
+  cube
+  [
+    size(main_width, main_height, main_depth)
+    Main
+  ]
+  [
+    translate(right_wing_pos_x, 0, right_wing_pos_z)
+    size(right_wing_width, right_wing_height, right_wing_depth)
+    Main
+  ]
+  [
+    translate(left_shed_pos_x, 0, left_shed_pos_z)
+    size(left_shed_width, left_shed_height, left_shed_depth)
+    Shed
+  ]
+  [
+    translate(right_shed_pos_x, 0, right_shed_pos_z)
+    size(right_shed_width, right_shed_height, right_shed_depth)
+    rotateScopeY(180)
+    Shed
+  ]
+
+  [
+    translate(silo_pos_x, 0, silo_pos_z)
+    size(silo_width, silo_height, silo_width)
+    Silo
+  ]
+  [
+    translate(silo_pos_x + 4.5, 0, silo_pos_z + 7.5)
+    size(silo_width, silo_height * 0.6, silo_width)
+    Silo
+  ]
+
+  Tree
+};
+
+rule Tree = {
+  translate(2, 0, right_wing_pos_z + 10)
+  size(12, 0, 0)
+  TreeAsset
+};
+
+const tree_asset_path = "assets/l-system_niklas_kerchner_farm.obj";
+rule TreeAsset :: !file_exists(tree_asset_path) = {
+  printLn("Before farm.shp can be derived, the tree for the lawn needs to be generated. For now, a red placeholder box is used instead.")
+  printLn("Please run ShapeMaker with the following parameters:")
+  printLn("--no-gui --export-obj --export-dir PATH_TO_SHAPEML/grammars/assets/ --export-suffix _farm --export-dont-merge-vertices --seed 1 --parameter init_l=8.00 PATH_TO_SHAPEML/grammars/l-system_niklas_kerchner.shp")
+  color(1, 0, 0, 0.4)
+  cube
+  MissingTree_
+};
+rule TreeAsset :: file_exists(tree_asset_path) = {
+  color(dark_wood_color)
+  mesh(tree_asset_path)
+  Tree_
+};
+
+rule Main = {
+  octreeAdd
+
+  // Bottom
+  splitFace("vertical", {
+    uvSetupProjectionXY(tex_size, tex_size)
+    FarmFacade
+  })
+
+  // Roof
+  splitFace("top", {
+    rotateScopeXYToXZ
+    roofGable(roof_angle, roof_overhang, roof_overhang)
+    splitY("sf",
+      1, { RoofDetail },
+      size_y * roof_proportion, { quad roofHip(roof_angle) RoofDetail }
+    )
+  })
+};
+rule Shed = {
+  octreeAdd
+
+  // Bottom
+  splitFace("vertical", {
+    uvSetupProjectionXY(tex_size, tex_size)
+    ShedFacade
+  })
+
+  // Roof
+  splitFace("top", {
+    rotateScopeXYToXZ
+    roofShed(shed_roof_angle)
+    splitFace(
+      "top", {
+        size(size_x + 2 * shed_roof_overhang, size_y + shed_roof_overhang, 0)
+        translate(-shed_roof_overhang, -shed_roof_overhang, 0)
+        rotateScopeXYToXZ
+        RoofDetail
+      },
+      "vertical", {
+        uvSetupProjectionXY(tex_size, tex_size)
+        ShedMaterial
+      }
+    )
+  })
+};
+
+rule Silo = {
+  [
+    cylinderFlat(32, 1, 1)
+    color(silo_color)
+    SiloBottom_
+  ]
+  [
+    translateY(size_y)
+    circle(32)
+    roofPyramid(tan(16) * size_x * 0.5)
+    RoofDetail
+  ]
+};
+
+rule FacadeWithBeams(inner_ops) = {
+  splitX("fsf",
+    beam_width * 0.25, { translateX(-size_x) scaleX(2) Beam },
+    1, inner_ops,
+    beam_width * 0.25, { scaleX(2) Beam }
+  )
+};
+
+rule ShedFacade = {
+  FacadeWithBeams({
+    splitY("sfsf",
+      1, { ShedMaterial },
+      beam_width, { Beam },
+      5, { ShedMaterial },
+      beam_width, { Beam }
+    )
+  })
+};
+
+rule FarmFacade = {
+  FacadeWithBeams({
+    splitY("s(s)",
+      floor_height, { GroundFloor },
+      floor_height, { Floor }
+    )
+  })
+};
+
+rule GroundFloor = {
+  splitX("(s)s(s)",
+    ground_floor_tile_width, { GroundFloorTile },
+    ground_floor_door_width, { DoorTile },
+    ground_floor_tile_width, { GroundFloorTile }
+  )
+};
+
+rule Floor = {
+  splitX("s(ss)",
+    tile_diag_width, { set("diag_idx", index / 2) DiagTile },
+    tile_win_width, { WindowTile },
+    tile_diag_width, { set("diag_idx", index / 2) DiagTile }
+  )
+};
+
+// Details
+
+rule BeamTile(inner_ops) = {
+  splitY("sf",
+    1, {
+      splitX("fsf",
+        beam_width * 0.5, { Beam },
+        1, inner_ops,
+        beam_width * 0.5, { Beam }
+      )
+    },
+    beam_width, { Beam }
+  )
+};
+
+rule GroundFloorTile = {
+  BeamTile({ StoneMaterial })
+};
+
+rule DoorTile = {
+  BeamTile({
+    translateZ(-5 * beam_depth)
+    uvSetupProjectionXY(size_x, size_y)
+    uvProject
+    color(dark_wood_color)
+    texture("assets/castle_door.jpg")
+    DoorTextureArea_
+  })
+};
+
+rule DiagTile :: occlusion != "none" = {
+  BeamTile({ WallMaterial })
+};
+rule DiagTile :: occlusion == "none" && get("diag_idx") % 2 == 0 = {
+  BeamTile({
+    WallMaterial
+
+    set("angle", atan(size_x / size_y))
+    set("x", beam_width * cos(get("angle")))
+    set("y", beam_width * sin(get("angle")))
+    trimPlane(-size_y, -size_x, 0, size_x - get("x"),        0, 0)
+    trimPlane( size_y,  size_x, 0, size_x           , get("y"), 0)
+    trimLocal
+    Beam
+  })
+};
+rule DiagTile ::occlusion == "none" &&  get("diag_idx") % 2 == 1 = {
+  BeamTile({
+    WallMaterial
+
+    set("angle", atan(size_x / size_y))
+    set("x", beam_width * cos(get("angle")))
+    set("y", beam_width * sin(get("angle")))
+    trimPlane(-size_y,  size_x, 0,        0, get("y"), 0)
+    trimPlane( size_y, -size_x, 0, get("x"),        0, 0)
+    trimLocal
+    Beam
+  })
+};
+
+rule WindowTile = {
+  BeamTile({
+    splitY("sfs",
+      1, { WallMaterial },
+      2 * beam_width + window_height, { WindowTileInner },
+      1, { WallMaterial }
+    )
+  })
+};
+
+rule WindowTileInner :: occlusion != "none" = {
+  WallMaterial
+};
+rule WindowTileInner :: occlusion == "none" = {
+  splitY("fff",
+    beam_width, { Beam },
+    window_height, { Window },
+    beam_width, { Beam }
+  )
+};
+
+rule Window = {
+  [
+    translateZ(-5 * beam_depth)
+    color(glass_color)
+    Glass_
+  ]
+  [
+    translateZ(-4.5 * beam_depth)
+    color(curtain_color)
+    CurtainLeft
+    CurtainRight
+  ]
+  [
+    translateZ(-4 * beam_depth)
+    color(shed_color)
+    splitX("sfs",
+      1, {},
+      beam_width * 0.25, { extrude(size_x) WindowGrid_ },
+      1, {}
+    )
+    splitY("sfs",
+      1, {},
+      beam_width * 0.25, { extrude(size_y) WindowGrid_ },
+      1, {}
+    )
+  ]
+  Flowers
+};
+
+rule CurtainLeft = {
+  trimPlane(1, -0.3, 0, 0.35 * size_x, size_y, 0)
+  trimPlane(1, -0.45, 0, 0.4 * size_x, size_y, 0)
+  trimPlane(1, -0.7, 0, 0.55 * size_x, size_y, 0)
+  trimLocal
+  Curtain_
+};
+rule CurtainRight = {
+  trimPlane(-1, -0.3,  0, size_x - 0.35 * size_x, size_y, 0)
+  trimPlane(-1, -0.45, 0, size_x - 0.4  * size_x, size_y, 0)
+  trimPlane(-1, -0.7,  0, size_x - 0.55 * size_x, size_y, 0)
+  trimLocal
+  Curtain_
+};
+
+rule Flowers = {
+  sizeY(0.11)
+  scaleX(0.8)
+  centerX
+  extrude(0.2)
+  color(dark_wood_color)
+  Box_
+  translateY(size_y)
+  translate(0.05 * size_x, 0, 0.1 * size_z)
+  scale(0.9, 1, 0.8)
+
+  // I should probably have used rand instead of manual labor.
+  FlowerPosition(0.0, 0.9, 20, 10)
+  FlowerPosition(0.1, 0.7, 32, 0)
+  FlowerPosition(0.2, 0.9, 16, -5)
+  FlowerPosition(0.3, 1.2, 30, 7)
+  FlowerPosition(0.4, 0.9, 25, 10)
+  FlowerPosition(0.5, 0.8, 31, -3)
+  FlowerPosition(0.6, 0.7, 19, -15)
+  FlowerPosition(0.7, 0.7, 34, 9)
+  FlowerPosition(0.8, 1.1, 22, 20)
+  FlowerPosition(0.9, 0.8, 30, 3)
+  FlowerPosition(1.0, 0.9, 13, -7)
+  FlowerPosition(0.05, 0.7, 62, 5)
+  FlowerPosition(0.15, 0.8, 45, -14)
+  FlowerPosition(0.25, 0.7, 64, 12)
+  FlowerPosition(0.35, 0.9, 56, -12)
+  FlowerPosition(0.45, 0.5, 60, 3)
+  FlowerPosition(0.55, 0.9, 50, -8)
+  FlowerPosition(0.65, 0.7, 62, 10)
+  FlowerPosition(0.75, 0.8, 48, -10)
+  FlowerPosition(0.85, 0.7, 61, 17)
+  FlowerPosition(0.95, 0.7, 53, -12)
+};
+
+rule FlowerPosition(move, scale, rot_x, rot_z) = {
+  translateX(size_x * move)
+  size(0.01, size_y * scale, 0.01)
+  rotateX(rot_x)
+  rotateZ(rot_z)
+  Flower
+};
+
+rule Flower = {
+  Stem_
+  translateY(size_y)
+  scale(12, 0.5, 12)
+  centerX
+  centerZ
+  quad
+  rotateScopeX(-90)
+  color(1, 0, 0)
+  mesh("assets/farm_flower_blossom.obj")
+  Flower_
+};
+
+rule Beam = {
+  translateZ(-5 * beam_depth)
+  extrude(6 * beam_depth)
+  color(wood_color)
+  Beam_
+};
+
+rule RoofDetail = {
+  splitFace(
+    "top", { extrudeWorld(0, 1, 0, roof_thickness) RoofMaterial },
+    "vertical", { Floor }
+  )
+};
+
+// Materials
+
+rule WallMaterial = {
+  color(wall_color)
+  WallMaterial_
+};
+
+rule ShedMaterial = {
+  color(shed_color)
+  texture("assets/farm_wood_planks.jpg")
+  uvProject
+  ShedMaterial_
+};
+
+rule StoneMaterial = {
+  uvProject
+  texture("assets/castle_brick_wall.jpg")
+  color("#888888")
+  StoneMaterial_
+};
+
+rule RoofMaterial = {
+  octreeAdd
+  uvSetupProjectionXY(tex_size, tex_size)
+  uvProject
+  texture("assets/castle_roof_tiles.jpg")
+  color(roof_color)
+  RoofMaterial_
+};
+

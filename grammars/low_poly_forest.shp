@@ -1,0 +1,211 @@
+// Shape Modeling Language (ShapeML)
+// Copyright (C) 2019  Stefan Lienhard
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+param num_tree_and_rock_samples = 900;
+
+param tree_avg_size = 9;
+param tree_size_variation = 0.6;
+param tree_num_segments_min = 5;
+param tree_num_segments_max = 7;
+param tree_overlap_ratio = 2.2;
+param tree_min_num_cones = 2;
+param tree_max_num_cones = 5;
+param tree_cone_h_w_ratio = 1.2;
+param tree_cone_concave_downpush_ratio = 0.15;
+param tree_cone_overlap = 0.5;
+param tree_cone_shrink_ratio = 0.75;
+param tree_max_bend_angle = 3.0;
+param tree_trunk_color = "#996633";
+param tree_color_1 = "#3C833C";
+param tree_color_2 = "#67AA20";
+param tree_color_3 = "#5BC568";
+
+param rock_avg_size = 15;
+param rock_size_variation = 0.4;
+param rock_h_w_ratio = 1.5;
+param rock_num_trim_planes = 25;
+param rock_color_1 = "#A89494";
+param rock_color_2 = "#8B939E";
+
+param debug_tree_only = false;
+param debug_rock_only = false;
+
+rule Axiom :: debug_tree_only = {
+  TreeBlockPreOcc
+};
+rule Axiom :: debug_rock_only = {
+  RockBlockPreOcc
+};
+rule Axiom :: !(debug_rock_only || debug_tree_only) = {
+  Forest(num_tree_and_rock_samples)
+};
+
+rule Tree = {
+  scale(tree_overlap_ratio)
+  centerX
+  centerZ
+
+  // Trunk
+  [
+     scale(0.1, 0.25, 0.1)
+     centerX
+     centerZ
+     cylinder(5, 1, 1)
+     color(tree_trunk_color)
+     Trunk_
+  ]
+  translateY(0.15 * size_y)
+
+  set("num_segments", rand_int(tree_num_segments_min, tree_num_segments_max))
+
+  repeatNoPush(rand_int(tree_min_num_cones, tree_max_num_cones), {
+    rotateX(rand_uniform(0, tree_max_bend_angle))
+    scale(tree_cone_shrink_ratio)
+    rotateY(rand_uniform(0, 360))
+    centerX
+    centerZ
+    TreeCone
+    translateY(size_y * (1.0 - tree_cone_overlap))
+  })
+};
+
+rule TreeCone = {
+  scaleY(tree_cone_h_w_ratio)
+  coneFlat(num_segments, 2, 1)
+
+  // Now we have to do a little hack to make sure that the cone is circular. If
+  // the scope is square, a cone with few segments will still get visibly
+  // stretched because there are not enough samples to reach the limits of
+  // bounding volume along all dimensions. That's we we query the 'aspect' ratio
+  // of the built-in cones, and scale accordingly.
+  // This is a bit hacky, since they sizes can only be queried after the built-
+  // in meshes have been generated and put into the cache.
+  set("internal_mesh_name", "!coneFlat_" + num_segments + "_2_1")
+  scaleCenterX(mesh_info(internal_mesh_name, "size_x"))
+  // Cones with an even number of segments need an offset since their 'peak'
+  // should not touch the scope's x-axis.
+  translateZ(((num_segments % 2) == 0) * (0.5 * (1.0 - cos(180.0 / num_segments))) * size_z)
+  scaleZ(mesh_info(internal_mesh_name, "size_z"))
+
+  ffdReset(1, 2, 1)
+  ffdTranslate(0, 1, 0, 0, -tree_cone_concave_downpush_ratio * size_y, 0)
+  ffdTranslate(0, 1, 1, 0, -tree_cone_concave_downpush_ratio * size_y, 0)
+  ffdTranslate(1, 1, 0, 0, -tree_cone_concave_downpush_ratio * size_y, 0)
+  ffdTranslate(1, 1, 1, 0, -tree_cone_concave_downpush_ratio * size_y, 0)
+  ffdApply
+  Cone_
+};
+
+// Random sampling of the y-aixs up hemisphere to find split plane normals for
+// chopping boxes into something that looks like random rocks.
+// For an explanation, see here for example:
+// https://raytracing.github.io/books/RayTracingTheRestOfYourLife.html#generatingrandomdirections/uniformsamplingahemisphere
+// (This is horrible to express in ShapeML.)
+func rand_unit_dir_x(r1, r2) = cos(360.0 * r1) * sqrt(r2);
+func rand_unit_dir_y(r1, r2) = sqrt(1.0 - r2);
+func rand_unit_dir_z(r1, r2) = sin(360.0 * r1) * sqrt(r2);
+
+rule Rock = {
+  translate(size_x * 0.5, 0, size_z * 0.5)  // Trim about center of xz-face.
+  repeatNoPush(rock_num_trim_planes, {
+    set("r1", rand_uniform(0.0, 1.0))
+    set("r2", rand_uniform(0.0, 1.0))
+    set("dir_x", rand_unit_dir_x(r1, r2))
+    set("dir_y", rand_unit_dir_y(r1, r2))
+    set("dir_z", rand_unit_dir_z(r1, r2))
+    set("max_dist", 0.5 * (abs(dir_x) * size_x + abs(dir_y) * size_y + abs(dir_z) * size_z))
+    trimPlane(dir_x, dir_y, dir_z, rand_uniform(0.5 * max_dist, 0.7 * max_dist))
+  })
+
+  RockTrimmed
+};
+rule RockTrimmed = {
+  translate(-size_x * 0.5, 0, -size_z * 0.5)  // Shift back
+  trim
+  Rock_
+};
+
+// Forest layout and distribution
+const scene_scale_factor = 0.5;
+const mean = 0 * scene_scale_factor;
+const sigma = 50 * scene_scale_factor;
+
+// We use recursion to generate the forest which allows us to occlusion query
+// each new element against already existing ones to guarantee that they don't
+// overlap.
+rule Forest(n) :: (n == 0) = {};
+rule Forest(n) :: (n > 0) = {
+  translateAbsX(rand_normal(mean, sigma))
+  translateAbsZ(rand_normal(mean, sigma))
+  TreeOrRockBlock
+  Forest(n - 1)
+};
+
+func tree_size = rand_uniform(tree_avg_size * (1.0 - tree_size_variation),
+                              tree_avg_size * (1.0 + tree_size_variation));
+func rock_size = rand_uniform(rock_avg_size * (1.0 - rock_size_variation),
+                              rock_avg_size * (1.0 + rock_size_variation));
+
+rule TreeOrRockBlock : 3 = { TreeBlockPreOcc };
+rule TreeOrRockBlock : 1 = { RockBlockPreOcc };
+rule TreeBlockPreOcc = {
+  size(1, 1, 1)
+  scale(tree_size)
+  scale(scene_scale_factor)
+  cube
+  TreeBlock
+};
+rule RockBlockPreOcc = {
+  size(rock_size, rock_size * rock_h_w_ratio, rock_size)
+  scale(scene_scale_factor)
+  cube
+  RockBlock
+};
+
+// Trees can not overlap with anything.
+rule TreeBlock :: (occlusion != "none") = {};
+rule TreeBlock :: (occlusion == "none") = {
+  octreeAdd
+  TreeColored
+};
+rule TreeColored = {
+  color(tree_color_1)
+  Tree
+};
+rule TreeColored = {
+  color(tree_color_2)
+  Tree
+};
+rule TreeColored = {
+  color(tree_color_3)
+  Tree
+};
+
+// Rocks can overlap with othe rocks.
+rule RockBlock :: (occlusion("TreeBlock") != "none") = {};
+rule RockBlock :: (occlusion("TreeBlock") == "none") = {
+  octreeAdd
+  RockColored
+};
+rule RockColored = {
+  color(rock_color_1)
+  Rock
+};
+rule RockColored = {
+  color(rock_color_2)
+  Rock
+};
+
