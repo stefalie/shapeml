@@ -113,22 +113,22 @@ rule Window = {
 Press the 'Reload grammar' button to see the updated facades.
 You can play with the exposed height and color parameters and press the 'Derive' button to update the model (or activate 'Auto derive' to have interactive feedback).
 
-The grammars for this example, for all the models in the teaser image, and more are available in the directory [grammars](grammars).
+The grammars for this example, for all the models in the teaser image, and more are available in the directory [`grammars`](grammars).
 ShapeMaker can also export OBJ meshes and save screenshots, and it also has various command line options (run `ShapeMaker.exe --help` to see them all).
 
 
 ## Documentation
 
-A complete list of all built-in shape operations, shape attributes, and functions is found in [docs/reference.md](docs/reference.md).
+A complete list of all built-in shape operations, shape attributes, and functions is found in [`docs/reference.md`](docs/reference.md).
 
 If you use vim to edit grammar files, consider using [vim-shapeml](https://github.com/stefalie/vim-shapeml) for syntax highlighting.
 
 
 ## License, Dependencies, and Credits
 
-ShapeML is licensed under GPL3v3, see [LICENSE](LICENSE) file.
+ShapeML is licensed under GPL3v3, see [`LICENSE`](LICENSE) file.
 
-This project is shipped with some third-party dependencies, each of which may have independent licensing (see `external` directory):
+This project is shipped with some third-party dependencies, each of which may have independent licensing (see [`external`](external) directory):
 
 - [eigen](http://eigen.tuxfamily.org)
 - [glfw](https://github.com/glfw/glfw)
@@ -242,9 +242,9 @@ python cpplint.py --filter=-build/c++11,-readability/fn_size --exclude=PATH_TO_S
 
 The OpenGL binding file `src/viewer/gl/init.h` is excluded because most of its code is copy and pasted from `glcorearb.h` and would violate several of the cpplint rules.
 
-There is a also [`.clang-format`](https://clang.llvm.org/docs/ClangFormat.html) file in the repository's root directory that allows for automatic formatting of the source code.
+There is a also [`.clang-format`](.clang-format) file in the repository's root directory that allows for automatic formatting of the source code.
 
 
 ## Future Work & TODO
 
-See [docs/todo.md](docs/todo.md).
+See [`docs/todo.md`](docs/todo.md).
