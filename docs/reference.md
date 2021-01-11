@@ -422,9 +422,6 @@ color_r
 color_g
 color_b
 color_a
-color_specular_r
-color_specular_g
-color_specular_b
 material_name
 metallic
 roughness
@@ -432,7 +429,7 @@ reflectance
 texture
 ```
 
-### Material
+### Misc
 
 ```
 // Index from split and repeat operations, -1 if none
