@@ -143,7 +143,7 @@ Here are the credits:
 - The Acacia tree grammar is ported from [*Talton et al., 2011, Metropolis Procedural Modeling*](http://vladlen.info/publications/metropolis-procedural-modeling).
 - The Aono & Kuni L-system is taken out of the book [*Prusinkiewicz, Aristid Lindenmayer, 1990, The Algorithmic Beauty of Plants*](http://algorithmicbotany.org/papers/#abop) but the real credit goes to *Aono, Kuni, 1984, Botanical Tree Image Generation*.
 - The Niklas & Kerchner L-system is out of *Eloy, 2011, Leonardo's Rule, Self-Similarity, and Wind-Induced Stresses in Trees* but has its origins in *Niklas, Kerchner, 1984, Paleobiology*.
-- the Leopold L-system is inspired by *Leopold, 2017, Algorithmische Botanik durch Lindenmayer Systeme in Blender*.
+- The Leopold L-system is inspired by *Leopold, 2017, Algorithmische Botanik durch Lindenmayer Systeme in Blender*.
 - The color palette in most test sample scenes is from [Gruvbox](https://github.com/morhetz/gruvbox).
 - The farm, castle, and Venice building grammars are ported from [*Lienhard et al., 2017, Design Transformations for Rule-based Procedural Modeling*](https://lgg.epfl.ch/publications/2017/Trafos/index.php). 
   I unfortunately don't remember the source anymore for some assets (brick walls, door, wooden planks, and roof tile textures used for the farm and castle; round door mesh used for the Venice house). Sorry.
