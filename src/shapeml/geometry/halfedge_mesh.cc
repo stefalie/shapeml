@@ -1644,26 +1644,12 @@ void HalfedgeMesh::GetScaledUnitTrafo(const Vec3& scale, Isometry3* translation,
 }
 
 Mat3 HalfedgeMesh::NormalMatrixFromScale(const Vec3& scale) const {
-  bool is_degenerate = false;
-  for (int i = 0; i < 3; ++i) {
-    if (scale[i] == 0.0) {
-      is_degenerate = true;
-      break;
-    }
-  }
-
   Vec3 scale_inverse;
-  if (!is_degenerate) {
-    for (int i = 0; i < 3; ++i) {
+  for (int i = 0; i < 3; ++i) {
+    if (scale[i] == 0.0) {  // Degenerate case
+      scale_inverse[i] = 1.0;
+    } else {
       scale_inverse[i] = 1.0 / scale[i];
-    }
-  } else {
-    for (int i = 0; i < 3; ++i) {
-      if (scale[i] == 0.0) {
-        scale_inverse[i] = 1.0;
-      } else {
-        scale_inverse[i] = 0.0;
-      }
     }
   }
 

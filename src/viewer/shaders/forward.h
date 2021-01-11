@@ -72,12 +72,11 @@ void main() {
   // = R^-T * S^-T
   // = R * S^-1
   const bvec3 degenerate = equal(scale, vec3(0.0));
-  vec3 scale_inv;
-  if (any(degenerate)) {
-    scale_inv = vec3(degenerate);
-  } else {
-    scale_inv = vec3(1.0) / scale;
-  }
+  const vec3 scale_inv = vec3(
+    degenerate.x ? 1.0 : 1.0 / scale.x,
+    degenerate.y ? 1.0 : 1.0 / scale.y,
+    degenerate.z ? 1.0 : 1.0 / scale.z
+  );
   vec3 transformed_normal = mat3(trafo) * (normal * scale_inv);
   // Could normalize here already.
   transformed_normal = mat3(camera.view_matrix) * transformed_normal;
