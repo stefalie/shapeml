@@ -346,10 +346,10 @@ rand_normal(float mean, float sigma)  // normal distribution random number
 noise(float pos_x, float pos_y, float pos_z)
 noise(float pos_x, float pos_y)
 
-fbm(float pos_x, float pos_y, float pos_z, int octaves)
-fbm(float pos_x, float pos_y, float pos_z, int octaves, float lacunarity, float gain)
-fbm(float pos_x, float pos_y, int octaves)
-fbm(float pos_x, float pos_y, int octaves, float lacunarity, float gain)
+fBm(float pos_x, float pos_y, float pos_z, int octaves)
+fBm(float pos_x, float pos_y, float pos_z, int octaves, float lacunarity, float gain)
+fBm(float pos_x, float pos_y, int octaves)
+fBm(float pos_x, float pos_y, int octaves, float lacunarity, float gain)
 ```
 
 ### Maths
