@@ -227,9 +227,9 @@ There are three more standalone test executables that can be built by passing `-
 The intention is to show how to use ShapeML's interface for creating grammars and shape trees in code.
 These standalone examples also work on Windows.
 
-1. `interpreter_test_standalone.cc` programmatically creates a grammar for a row of simple buildings, runs it through the interpreter, and stores the output in a OBJ mesh file.
-2. `shape_test_standalone.cc` programmatically creates the shapes and the shape tree for a very simple building.
-3. `skeleton_test.cc` to debug and visualize the straight skeletons for a set of example polygons (the straight skeleton is required for roof generation).
+1. [`interpreter_test_standalone.cc`](src/shapeml/interpreter_test_standalone.cc) programmatically creates a grammar for a row of simple buildings, runs it through the interpreter, and stores the output in a OBJ mesh file.
+2. [`shape_test_standalone.cc`](src/shapeml/shape_test_standalone.cc) programmatically creates the shapes and the shape tree for a very simple building.
+3. [`skeleton_test.cc`](src/shapeml/geometry/skeleton/skeleton_test.cc) to debug and visualize the straight skeletons for a set of example polygons (the straight skeleton is required for roof generation).
    (On Linux this will require OpenGL development libraries, e.g., `sudo apt-get install libgl1-mesa-dev`.)
 
 ### Style Guide
