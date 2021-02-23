@@ -240,7 +240,7 @@ ShapeML loosely adheres to the [Google C++ Style Guide](https://google.github.io
 python cpplint.py --filter=-build/c++11,-readability/fn_size --exclude=PATH_TO_SHAPEML_REPO/src/viewer/gl/init.h --recursive PATH_TO_SHAPEML_REPO/src
 ```
 
-The OpenGL binding file `src/viewer/gl/init.h` is excluded because most of its code is copy and pasted from `glcorearb.h` and would violate several of the cpplint rules.
+The OpenGL binding file `src/viewer/gl/init.h` is excluded because most of its code is copied and pasted from `glcorearb.h` and would violate several of the cpplint rules.
 
 There is a also [`.clang-format`](.clang-format) file in the repository's root directory that allows for automatic formatting of the source code.
 
