@@ -92,7 +92,7 @@ shapeml::Shape* MakeShape() {
   // Roof terminal of the mass model
   Shape* roof = bldg_mass->CreateOffspring();
   roof->set_name("Building Roof");
-  // I just happen to know that face 1 is always to top shape after an extrude.
+  // I just happen to know that face 1 is always the top shape after an extrude.
   // TODO(stefalie): Expose face splits better in the mesh API, e.g.,
   // mesh->FaceSplit(MeshFace::TOP).
   HalfedgeMeshPtr mesh_roof = bldg_mass->mesh()->GetFaceComponent(1);
