@@ -211,7 +211,7 @@ void Interpreter::ApplyShapeOpString(const ShapeOpString& ops,
     }
 
     ValueVec param_values;
-    for (const ExprConstPtr& expr : op.parameters) {
+    for (const ExprConstPtr expr : op.parameters) {
       param_values.push_back(expr->Eval());
     }
 

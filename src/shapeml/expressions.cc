@@ -286,7 +286,7 @@ class CopyExprAndApplyParams final : public ExpressionVisitor {
     auto it = func_params_.find(name_expr->name());
     if (it == func_params_.end()) {
       ExprVec new_params;
-      for (const ExprPtr p : name_expr->params()) {
+      for (const ExprPtr& p : name_expr->params()) {
         p->Accept(this);
         new_params.push_back(expr_);
       }
