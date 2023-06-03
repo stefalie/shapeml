@@ -93,7 +93,8 @@ class HalfedgeMesh {
   // TODO(stefalie): Add a booelan parameter 'triangulize' that allows toggling
   // the output between triangles and polygons of aribtrary size. Note that non-
   // triangulized geometry would also require an array of polygon sizes.
-  void FillExportBuffers(Vec3Vec* vertices, Vec3Vec* normals, Vec2Vec* uvs,
+  void FillExportBuffers(bool triangulate, Vec3Vec* vertices, Vec3Vec* normals,
+                         Vec2Vec* uvs, IdxVec* face_sizes,
                          IdxVec* vertex_indices, IdxVec* normal_indices,
                          IdxVec* uv_indices) const;
 

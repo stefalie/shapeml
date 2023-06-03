@@ -50,7 +50,8 @@ int main(int, char*[]) {
   std::cout
       << "\nThe OBJ model is stored in test_interpreter_standalone.obj.\n";
   shapeml::Exporter(root, shapeml::ExportType::OBJ,
-                    "test_interpreter_standalone", grammar.base_path(), true);
+                    "test_interpreter_standalone", grammar.base_path(), true,
+                    true);
 
   return 0;
 }

@@ -27,7 +27,7 @@ namespace shapeml {
 
 Exporter::Exporter(const Shape* shape, ExportType type,
                    const std::string& file_name, const std::string& src_dir,
-                   bool merge_vertices) {
+                   bool merge_vertices, bool triangulate) {
   if (file_name.empty()) {
     std::cerr << "ERROR in exporter: Filename is empty.\n";
     return;
@@ -35,7 +35,7 @@ Exporter::Exporter(const Shape* shape, ExportType type,
 
   switch (type) {
     case ExportType::OBJ:
-      ExportOBJ(shape, file_name, src_dir, merge_vertices);
+      ExportOBJ(shape, file_name, src_dir, merge_vertices, triangulate);
       break;
   }
 }
@@ -47,13 +47,15 @@ static inline int ffp(Scalar t) {
 }
 
 void Exporter::ExportOBJ(const Shape* shape, const std::string& file_name,
-                         const std::string& src_dir, bool merge_vertices) {
+                         const std::string& src_dir, bool merge_vertices,
+                         bool triangulate) {
   LeafConstVisitor leaf_visitor;
   shape->AcceptVisitor(&leaf_visitor);
 
   Vec3Vec vertices;
   Vec3Vec normals;
   Vec2Vec uvs;
+  IdxVecVec face_sizes;
   IdxVecVec vertex_indices;
   IdxVecVec normal_indices;
   IdxVecVec uv_indices;
@@ -65,6 +67,7 @@ void Exporter::ExportOBJ(const Shape* shape, const std::string& file_name,
     Vec3Vec vertices;
     Vec3Vec normals;
     Vec2Vec uvs;
+    IdxVec face_sizes;
     IdxVec vertex_indices;
     IdxVec normal_indices;
     IdxVec uv_indices;
@@ -89,7 +92,8 @@ void Exporter::ExportOBJ(const Shape* shape, const std::string& file_name,
       if (it == mesh_buffer_cache.end()) {
         auto jt = mesh_buffer_cache.emplace(s->mesh(), ExportBuffer());
         buf = &jt.first->second;
-        s->mesh()->FillExportBuffers(&buf->vertices, &buf->normals, &buf->uvs,
+        s->mesh()->FillExportBuffers(triangulate, &buf->vertices, &buf->normals,
+                                     &buf->uvs, &buf->face_sizes,
                                      &buf->vertex_indices, &buf->normal_indices,
                                      &buf->uv_indices);
       } else {
@@ -111,6 +115,7 @@ void Exporter::ExportOBJ(const Shape* shape, const std::string& file_name,
       if (material_idx < 0) {
         material_idx = static_cast<int>(materials.size());
         materials.push_back(s->material());
+        face_sizes.push_back(IdxVec());
         vertex_indices.push_back(IdxVec());
         normal_indices.push_back(IdxVec());
         uv_indices.push_back(IdxVec());
@@ -163,6 +168,10 @@ void Exporter::ExportOBJ(const Shape* shape, const std::string& file_name,
         }
         uv_buf_idx_to_idx.emplace(i, it.first->second);
       }
+
+      face_sizes[material_idx].insert(face_sizes[material_idx].end(),
+                                      buf->face_sizes.begin(),
+                                      buf->face_sizes.end());
 
       assert(buf->vertex_indices.size() == buf->normal_indices.size());
       for (size_t i = 0; i < buf->vertex_indices.size(); ++i) {
@@ -248,53 +257,59 @@ void Exporter::ExportOBJ(const Shape* shape, const std::string& file_name,
 
     for (size_t i = 0; i < vertex_indices.size(); ++i) {
       oss << "usemtl " << materials[i].name << '\n';
-      for (size_t j = 0; j < vertex_indices[i].size(); j += 3) {
-        // Somtimes, due to the fixed point rounding, it can happend that we get
-        // degenerate triangles with two (or even) three idetical vertex
-        // indices. We simply skip such triangles.
-        // TODO(stefalie): Ideally we should check if the vertices of a skippped
-        // triangle are used elsewhere, and if not we should probably delete it.
-        if (!(vertex_indices[i][j] != vertex_indices[i][j + 1] &&
-              vertex_indices[i][j] != vertex_indices[i][j + 2] &&
-              vertex_indices[i][j + 1] != vertex_indices[i][j + 2])) {
-          continue;
+      size_t idx_offset = 0;
+      for (size_t k = 0; k < face_sizes[i].size(); ++k) {
+        const uint32_t num_vertices = face_sizes[i][k];
+
+        size_t num_changes = 0;
+        for (size_t j = 0; j < num_vertices; ++j) {
+          // Somtimes, due to the fixed point rounding, it can happend that we
+          // get degenerate one or several idetical vertex indices. We simply
+          // skip such faces if they have < 3 vertices.
+          // TODO(stefalie): Ideally we should check if the vertices of a
+          // skippped face are used elsewhere, and if not we should probably
+          // delete it.
+          if (vertex_indices[i][idx_offset + j] !=
+              vertex_indices[i][idx_offset + (j + 1) % num_vertices]) {
+            ++num_changes;
+          }
+        }
+        const bool skip_face = num_changes < 3;
+
+        if (!skip_face) {
+          if (maya_hack && !uvs.empty() &&
+              uv_indices[i][idx_offset] == (unsigned)-1) {
+            // Faces without uv coordinates for Maya iff any of the faces have
+            // uv coordinates.
+            oss << 'f';
+            for (size_t j = 0; j < num_vertices; ++j) {
+              assert(uv_indices[i][idx_offset + j] == (unsigned)-1);
+              oss << ' ' << vertex_indices[i][idx_offset + j] << '/'
+                  << uvs.size() << '/' << normal_indices[i][idx_offset + j];
+            }
+            oss << '\n';
+          } else if (uv_indices[i][idx_offset] == (unsigned)-1) {
+            // Faces without uv coordinates.
+            oss << 'f';
+            for (size_t j = 0; j < num_vertices; ++j) {
+              assert(uv_indices[i][idx_offset + j] == (unsigned)-1);
+              oss << ' ' << vertex_indices[i][idx_offset + j] << "//"
+                  << normal_indices[i][idx_offset + j];
+            }
+            oss << '\n';
+          } else {
+            // Faces with uv coordinates.
+            oss << 'f';
+            for (size_t j = 0; j < num_vertices; ++j) {
+              oss << ' ' << vertex_indices[i][idx_offset + j] << '/'
+                  << uv_indices[i][idx_offset + j] << '/'
+                  << normal_indices[i][idx_offset + j];
+            }
+            oss << '\n';
+          }
         }
 
-        if (maya_hack && !uvs.empty() && uv_indices[i][j] == (unsigned)-1) {
-          // Faces without uv coordinates for Maya iff any of the faces have uv
-          // coordinates.
-          assert(uv_indices[i][j + 1] == (unsigned)-1);
-          assert(uv_indices[i][j + 2] == (unsigned)-1);
-          oss << 'f';
-          oss << ' ' << vertex_indices[i][j] << '/' << uvs.size() << '/'
-              << normal_indices[i][j];
-          oss << ' ' << vertex_indices[i][j + 1] << '/' << uvs.size() << '/'
-              << normal_indices[i][j + 1];
-          oss << ' ' << vertex_indices[i][j + 2] << '/' << uvs.size() << '/'
-              << normal_indices[i][j + 2];
-          oss << '\n';
-        } else if (uv_indices[i][j] == (unsigned)-1) {
-          // Faces without uv coordinates.
-          assert(uv_indices[i][j + 1] == (unsigned)-1);
-          assert(uv_indices[i][j + 2] == (unsigned)-1);
-          oss << 'f';
-          oss << ' ' << vertex_indices[i][j] << "//" << normal_indices[i][j];
-          oss << ' ' << vertex_indices[i][j + 1] << "//"
-              << normal_indices[i][j + 1];
-          oss << ' ' << vertex_indices[i][j + 2] << "//"
-              << normal_indices[i][j + 2];
-          oss << '\n';
-        } else {
-          // Faces with uv coordinates.
-          oss << 'f';
-          oss << ' ' << vertex_indices[i][j] << '/' << uv_indices[i][j] << '/'
-              << normal_indices[i][j];
-          oss << ' ' << vertex_indices[i][j + 1] << '/' << uv_indices[i][j + 1]
-              << '/' << normal_indices[i][j + 1];
-          oss << ' ' << vertex_indices[i][j + 2] << '/' << uv_indices[i][j + 2]
-              << '/' << normal_indices[i][j + 2];
-          oss << '\n';
-        }
+        idx_offset += num_vertices;
       }
     }
 

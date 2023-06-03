@@ -30,11 +30,12 @@ enum class ExportType { OBJ };
 class Exporter {
  public:
   Exporter(const Shape* shape, ExportType type, const std::string& file_name,
-           const std::string& src_dir, bool merge_vertices);
+           const std::string& src_dir, bool merge_vertices, bool triangulate);
 
  private:
   void ExportOBJ(const Shape* shape, const std::string& file_name,
-                 const std::string& src_dir, bool merge_vertices);
+                 const std::string& src_dir, bool merge_vertices,
+                 bool triangulate);
 };
 
 }  // namespace shapeml

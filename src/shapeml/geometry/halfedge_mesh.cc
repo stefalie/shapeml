@@ -1264,13 +1264,15 @@ void HalfedgeMesh::FillRenderBuffer(std::vector<RenderVertex>* vertex_data,
   }
 }
 
-void HalfedgeMesh::FillExportBuffers(Vec3Vec* vertices, Vec3Vec* normals,
-                                     Vec2Vec* uvs, IdxVec* vertex_indices,
+void HalfedgeMesh::FillExportBuffers(bool triangulate, Vec3Vec* vertices,
+                                     Vec3Vec* normals, Vec2Vec* uvs,
+                                     IdxVec* face_sizes, IdxVec* vertex_indices,
                                      IdxVec* normal_indices,
                                      IdxVec* uv_indices) const {
   assert(vertices->empty());
   assert(vertices->empty());
   assert(normals->empty());
+  assert(face_sizes->empty());
   assert(vertex_indices->empty());
   assert(normal_indices->empty());
   assert(uvs->empty());
@@ -1379,17 +1381,29 @@ void HalfedgeMesh::FillExportBuffers(Vec3Vec* vertices, Vec3Vec* normals,
       }
     } while (++hf_it != hf_it_end);
 
-    IdxVecVec tris;
-    Triangulator3D triangulator;
-    triangulator.Triangulize(face, &tris, true);
-    for (size_t i = 0; i < tris.size(); ++i) {
-      for (size_t j = 0; j < 3; ++j) {
-        vertex_indices->push_back(face_vertex_indices[tris[i][j]]);
-        normal_indices->push_back(face_normals_indices[tris[i][j]]);
+    if (triangulate) {
+      IdxVecVec tris;
+      Triangulator3D triangulator;
+      triangulator.Triangulize(face, &tris, true);
+      for (size_t i = 0; i < tris.size(); ++i) {
+        for (size_t j = 0; j < 3; ++j) {
+          vertex_indices->push_back(face_vertex_indices[tris[i][j]]);
+          normal_indices->push_back(face_normals_indices[tris[i][j]]);
+          if (has_uv0_) {
+            uv_indices->push_back(face_uv_indices[tris[i][j]]);
+          }
+        }
+        face_sizes->push_back(3);
+      }
+    } else {
+      for (size_t i = 0; i < face.size(); ++i) {
+        vertex_indices->push_back(face_vertex_indices[i]);
+        normal_indices->push_back(face_normals_indices[i]);
         if (has_uv0_) {
-          uv_indices->push_back(face_uv_indices[tris[i][j]]);
+          uv_indices->push_back(face_uv_indices[i]);
         }
       }
+      face_sizes->push_back(static_cast<uint32_t>(face.size()));
     }
   }
 }

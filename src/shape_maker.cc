@@ -46,6 +46,7 @@ const char* ERROR_MSG =
  [--seed INT]
  [--export-obj]
  [--export-dont-merge-vertices]
+ [--export-dont-triangulate]
  [--export-dir PATH]
  [--export-suffix STRING]
  [--help]
@@ -86,6 +87,10 @@ arguments for ShapeMaker:
     conincide with other vertices. This flag disables vertex merging. The
     default merging is done by discretizing the points into a 3D grid whose cell
     side length is 1/(2^16). Ignored in GUI mode.
+
+  --export-dont-triangulate (optional)
+    By default, the OBJ exporter triangulates all faces. This disables
+    triangulation and generates polygons with more than three vertices.
 
  --export-dir PATH (optional)
     The path to the directory to which the exporter will write the mesh file. If
@@ -181,7 +186,8 @@ struct GuiSettings {
   bool auto_derive = false;
   bool auto_reset_camera = true;
   std::string export_name;
-  bool export_merge_vertices;
+  bool export_merge_vertices = true;
+  bool export_triangulate = true;
   bool show_rendering_settings = false;
   // ID of renderable and material of ground plane. Since they're added first,
   // they'll both be 0.
@@ -210,6 +216,7 @@ int main(int argc, char* argv[]) {
   context.seed = static_cast<int>(time(nullptr));
   bool flag_export_obj = false;
   bool flag_export_dont_merge_vertices = false;
+  bool flag_export_dont_triangulate = false;
   std::string export_dir;
   std::string export_suffix;
   bool flag_help = false;
@@ -247,6 +254,8 @@ int main(int argc, char* argv[]) {
       flag_export_obj = true;
     } else if (std::string(argv[i]) == "--export-dont-merge-vertices") {
       flag_export_dont_merge_vertices = true;
+    } else if (std::string(argv[i]) == "--export-dont-triangulate") {
+      flag_export_dont_triangulate = true;
     } else if (std::string(argv[i]) == "--export-dir") {
       ++i;
       if (i < argc && export_dir.empty()) {
@@ -460,7 +469,8 @@ int main(int argc, char* argv[]) {
     if (flag_export_obj) {
       shapeml::Exporter(context.root, shapeml::ExportType::OBJ, export_name,
                         context.grammar.base_path(),
-                        !flag_export_dont_merge_vertices);
+                        !flag_export_dont_merge_vertices,
+                        !flag_export_dont_triangulate);
     }
 
     if (flag_screenshot) {
@@ -492,6 +502,7 @@ int main(int argc, char* argv[]) {
     gui_settings.grammar_file = context.grammar.file_name();
     gui_settings.export_name = export_name;
     gui_settings.export_merge_vertices = !flag_export_dont_merge_vertices;
+    gui_settings.export_triangulate = !flag_export_dont_triangulate;
     gui_settings.new_seed = context.seed;
     gui_settings.new_axiom_name = context.axiom_name;
     gui_settings.new_parameters = context.parameters;
@@ -923,7 +934,8 @@ void RenderGui() {
       if (context.root) {
         shapeml::Exporter(context.root, shapeml::ExportType::OBJ,
                           gui_settings.export_name, context.grammar.base_path(),
-                          !gui_settings.export_merge_vertices);
+                          gui_settings.export_merge_vertices,
+                          gui_settings.export_triangulate);
       }
     }
     if (!context.root) {
@@ -931,6 +943,8 @@ void RenderGui() {
     }
     ImGui::SameLine();
     ImGui::Checkbox("Merge vertices", &gui_settings.export_merge_vertices);
+    ImGui::SameLine();
+    ImGui::Checkbox("Triangulate", &gui_settings.export_triangulate);
 
     ImGui::Separator();
 

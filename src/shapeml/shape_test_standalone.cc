@@ -34,7 +34,7 @@ int main(int, char*[]) {
 
   std::cout << "\nThe OBJ model is stored in test_shape_standalone.obj.\n";
   shapeml::Exporter(root, shapeml::ExportType::OBJ, "test_shape_standalone", "",
-                    true);
+                    true, true);
 
   delete root;
   return 0;
